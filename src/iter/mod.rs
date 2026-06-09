@@ -11,7 +11,7 @@
 //! integers, one might write:
 //!
 //! ```rust
-//! use rayon::prelude::*;
+//! use satin::prelude::*;
 //! fn sum_of_squares(input: &[i32]) -> i32 {
 //!     input.par_iter()
 //!          .map(|i| i * i)
@@ -22,7 +22,7 @@
 //! Or, to increment all the integers in a slice, you could write:
 //!
 //! ```rust
-//! use rayon::prelude::*;
+//! use satin::prelude::*;
 //! fn increment_all(input: &mut [i32]) {
 //!     input.par_iter_mut()
 //!          .for_each(|p| *p += 1);
@@ -30,7 +30,7 @@
 //! ```
 //!
 //! To use parallel iterators, first import the traits by adding
-//! something like `use rayon::prelude::*` to your module. You can
+//! something like `use satin::prelude::*` to your module. You can
 //! then call `par_iter`, `par_iter_mut`, or `into_par_iter` to get a
 //! parallel iterator. Like a [regular iterator][], parallel
 //! iterators work by first constructing a computation and then
@@ -168,7 +168,7 @@ pub use self::{
     chunks::Chunks,
     cloned::Cloned,
     copied::Copied,
-    empty::{Empty, empty},
+    empty::{empty, Empty},
     enumerate::Enumerate,
     filter::Filter,
     filter_map::FilterMap,
@@ -187,16 +187,16 @@ pub use self::{
     map::Map,
     map_with::{MapInit, MapWith},
     multizip::MultiZip,
-    once::{Once, once},
+    once::{once, Once},
     panic_fuse::PanicFuse,
     par_bridge::{IterBridge, ParallelBridge},
     positions::Positions,
-    repeat::{Repeat, RepeatN, repeat, repeat_n},
+    repeat::{repeat, repeat_n, Repeat, RepeatN},
     rev::Rev,
     skip::Skip,
     skip_any::SkipAny,
     skip_any_while::SkipAnyWhile,
-    splitter::{Split, split},
+    splitter::{split, Split},
     step_by::StepBy,
     take::Take,
     take_any::TakeAny,
@@ -204,7 +204,7 @@ pub use self::{
     try_fold::{TryFold, TryFoldWith},
     update::Update,
     walk_tree::{
-        WalkTree, WalkTreePostfix, WalkTreePrefix, walk_tree, walk_tree_postfix, walk_tree_prefix,
+        walk_tree, walk_tree_postfix, walk_tree_prefix, WalkTree, WalkTreePostfix, WalkTreePrefix,
     },
     while_some::WhileSome,
     zip::Zip,
@@ -231,7 +231,7 @@ pub trait IntoParallelIterator {
     /// # Examples
     ///
     /// ```
-    /// use rayon::prelude::*;
+    /// use satin::prelude::*;
     ///
     /// println!("counting in parallel:");
     /// (0..100).into_par_iter()
@@ -241,7 +241,7 @@ pub trait IntoParallelIterator {
     /// This conversion is often implicit for arguments to methods like [`zip`].
     ///
     /// ```
-    /// use rayon::prelude::*;
+    /// use satin::prelude::*;
     ///
     /// let v: Vec<_> = (0..5).into_par_iter().zip(5..10).collect();
     /// assert_eq!(v, [(0, 5), (1, 6), (2, 7), (3, 8), (4, 9)]);
@@ -274,7 +274,7 @@ pub trait IntoParallelRefIterator<'data> {
     /// # Examples
     ///
     /// ```
-    /// use rayon::prelude::*;
+    /// use satin::prelude::*;
     ///
     /// let v: Vec<_> = (0..100).collect();
     /// assert_eq!(v.par_iter().sum::<i32>(), 100 * 99 / 2);
@@ -322,7 +322,7 @@ pub trait IntoParallelRefMutIterator<'data> {
     /// # Examples
     ///
     /// ```
-    /// use rayon::prelude::*;
+    /// use satin::prelude::*;
     ///
     /// let mut v = vec![0usize; 5];
     /// v.par_iter_mut().enumerate().for_each(|(i, x)| *x = i);
@@ -369,7 +369,7 @@ pub trait ParallelIterator: Sized + Send {
     /// # Examples
     ///
     /// ```
-    /// use rayon::prelude::*;
+    /// use satin::prelude::*;
     ///
     /// (0..100).into_par_iter().for_each(|x| println!("{:?}", x));
     /// ```
@@ -384,14 +384,14 @@ pub trait ParallelIterator: Sized + Send {
     /// the iterator, in parallel.
     ///
     /// The `init` value will be cloned only as needed to be paired with
-    /// the group of items in each rayon job.  It does not require the type
+    /// the group of items in each satin job.  It does not require the type
     /// to be `Sync`.
     ///
     /// # Examples
     ///
     /// ```
     /// use std::sync::mpsc::channel;
-    /// use rayon::prelude::*;
+    /// use satin::prelude::*;
     ///
     /// let (sender, receiver) = channel();
     ///
@@ -415,14 +415,14 @@ pub trait ParallelIterator: Sized + Send {
     /// the iterator, in parallel.
     ///
     /// The `init` function will be called only as needed for a value to be
-    /// paired with the group of items in each rayon job.  There is no
+    /// paired with the group of items in each satin job.  There is no
     /// constraint on that returned type at all!
     ///
     /// # Examples
     ///
     /// ```
     /// use rand::RngExt;
-    /// use rayon::prelude::*;
+    /// use satin::prelude::*;
     ///
     /// let mut v = vec![0u8; 1_000_000];
     ///
@@ -456,7 +456,7 @@ pub trait ParallelIterator: Sized + Send {
     /// # Examples
     ///
     /// ```
-    /// use rayon::prelude::*;
+    /// use satin::prelude::*;
     /// use std::io::{self, Write};
     ///
     /// // This will stop iteration early if there's any write error, like
@@ -491,7 +491,7 @@ pub trait ParallelIterator: Sized + Send {
     ///
     /// ```
     /// use std::sync::mpsc::channel;
-    /// use rayon::prelude::*;
+    /// use satin::prelude::*;
     ///
     /// let (sender, receiver) = channel();
     ///
@@ -532,7 +532,7 @@ pub trait ParallelIterator: Sized + Send {
     ///
     /// ```
     /// use rand::{RngExt, TryRng};
-    /// use rayon::prelude::*;
+    /// use satin::prelude::*;
     ///
     /// let mut v = vec![0u8; 1_000_000];
     ///
@@ -567,7 +567,7 @@ pub trait ParallelIterator: Sized + Send {
     /// # Examples
     ///
     /// ```
-    /// use rayon::prelude::*;
+    /// use satin::prelude::*;
     ///
     /// let count = (0..100).into_par_iter().count();
     ///
@@ -587,7 +587,7 @@ pub trait ParallelIterator: Sized + Send {
     /// # Examples
     ///
     /// ```
-    /// use rayon::prelude::*;
+    /// use satin::prelude::*;
     ///
     /// let mut par_iter = (0..5).into_par_iter().map(|x| x * 2);
     ///
@@ -607,14 +607,14 @@ pub trait ParallelIterator: Sized + Send {
     /// iterator, producing a new iterator with the results.
     ///
     /// The `init` value will be cloned only as needed to be paired with
-    /// the group of items in each rayon job.  It does not require the type
+    /// the group of items in each satin job.  It does not require the type
     /// to be `Sync`.
     ///
     /// # Examples
     ///
     /// ```
     /// use std::sync::mpsc::channel;
-    /// use rayon::prelude::*;
+    /// use satin::prelude::*;
     ///
     /// let (sender, receiver) = channel();
     ///
@@ -645,14 +645,14 @@ pub trait ParallelIterator: Sized + Send {
     /// iterator, producing a new iterator with the results.
     ///
     /// The `init` function will be called only as needed for a value to be
-    /// paired with the group of items in each rayon job.  There is no
+    /// paired with the group of items in each satin job.  There is no
     /// constraint on that returned type at all!
     ///
     /// # Examples
     ///
     /// ```
     /// use rand::RngExt;
-    /// use rayon::prelude::*;
+    /// use satin::prelude::*;
     ///
     /// let a: Vec<_> = (1i32..1_000_000)
     ///     .into_par_iter()
@@ -687,7 +687,7 @@ pub trait ParallelIterator: Sized + Send {
     /// # Examples
     ///
     /// ```
-    /// use rayon::prelude::*;
+    /// use satin::prelude::*;
     ///
     /// let a = [1, 2, 3];
     ///
@@ -716,7 +716,7 @@ pub trait ParallelIterator: Sized + Send {
     /// # Examples
     ///
     /// ```
-    /// use rayon::prelude::*;
+    /// use satin::prelude::*;
     ///
     /// let a = [1, 2, 3];
     ///
@@ -743,7 +743,7 @@ pub trait ParallelIterator: Sized + Send {
     /// # Examples
     ///
     /// ```
-    /// use rayon::prelude::*;
+    /// use satin::prelude::*;
     ///
     /// let a = [1, 4, 2, 3];
     ///
@@ -777,7 +777,7 @@ pub trait ParallelIterator: Sized + Send {
     /// # Examples
     ///
     /// ```
-    /// use rayon::prelude::*;
+    /// use satin::prelude::*;
     ///
     /// let par_iter = (0..5).into_par_iter().update(|x| {*x *= 2;});
     ///
@@ -798,7 +798,7 @@ pub trait ParallelIterator: Sized + Send {
     /// # Examples
     ///
     /// ```
-    /// use rayon::prelude::*;
+    /// use satin::prelude::*;
     ///
     /// let mut par_iter = (0..10).into_par_iter().filter(|x| x % 2 == 0);
     ///
@@ -819,7 +819,7 @@ pub trait ParallelIterator: Sized + Send {
     /// # Examples
     ///
     /// ```
-    /// use rayon::prelude::*;
+    /// use satin::prelude::*;
     ///
     /// let mut par_iter = (0..10).into_par_iter()
     ///                         .filter_map(|x| {
@@ -847,7 +847,7 @@ pub trait ParallelIterator: Sized + Send {
     /// # Examples
     ///
     /// ```
-    /// use rayon::prelude::*;
+    /// use satin::prelude::*;
     ///
     /// let a = [[1, 2], [3, 4], [5, 6], [7, 8]];
     ///
@@ -888,7 +888,7 @@ pub trait ParallelIterator: Sized + Send {
     /// # Examples
     ///
     /// ```
-    /// use rayon::prelude::*;
+    /// use satin::prelude::*;
     /// use std::cell::RefCell;
     ///
     /// let a = [[1, 2], [3, 4], [5, 6], [7, 8]];
@@ -918,7 +918,7 @@ pub trait ParallelIterator: Sized + Send {
     /// # Examples
     ///
     /// ```
-    /// use rayon::prelude::*;
+    /// use satin::prelude::*;
     ///
     /// let x: Vec<Vec<_>> = vec![vec![1, 2], vec![3, 4]];
     /// let y: Vec<_> = x.into_par_iter().flatten().collect();
@@ -940,7 +940,7 @@ pub trait ParallelIterator: Sized + Send {
     /// # Examples
     ///
     /// ```
-    /// use rayon::prelude::*;
+    /// use satin::prelude::*;
     ///
     /// let x: Vec<Vec<_>> = vec![vec![1, 2], vec![3, 4]];
     /// let iters: Vec<_> = x.into_iter().map(Vec::into_iter).collect();
@@ -969,7 +969,7 @@ pub trait ParallelIterator: Sized + Send {
     /// // Iterate over a sequence of pairs `(x0, y0), ..., (xN, yN)`
     /// // and use reduce to compute one pair `(x0 + ... + xN, y0 + ... + yN)`
     /// // where the first/second elements are summed separately.
-    /// use rayon::prelude::*;
+    /// use satin::prelude::*;
     /// let sums = [(0, 1), (5, 6), (16, 2), (8, 9)]
     ///            .par_iter()        // iterating over &(i32, i32)
     ///            .cloned()          // iterating over (i32, i32)
@@ -1004,7 +1004,7 @@ pub trait ParallelIterator: Sized + Send {
     /// # Examples
     ///
     /// ```
-    /// use rayon::prelude::*;
+    /// use satin::prelude::*;
     /// let sums = [(0, 1), (5, 6), (16, 2), (8, 9)]
     ///            .par_iter()        // iterating over &(i32, i32)
     ///            .cloned()          // iterating over (i32, i32)
@@ -1057,7 +1057,7 @@ pub trait ParallelIterator: Sized + Send {
     /// # Examples
     ///
     /// ```
-    /// use rayon::prelude::*;
+    /// use satin::prelude::*;
     ///
     /// // Compute the sum of squares, being careful about overflow.
     /// fn sum_squares<I: IntoParallelIterator<Item = i32>>(iter: I) -> Option<i32> {
@@ -1105,7 +1105,7 @@ pub trait ParallelIterator: Sized + Send {
     /// # Examples
     ///
     /// ```
-    /// use rayon::prelude::*;
+    /// use satin::prelude::*;
     ///
     /// let files = ["/dev/null", "/does/not/exist"];
     ///
@@ -1201,7 +1201,7 @@ pub trait ParallelIterator: Sized + Send {
     /// to use map/reduce, you might try this:
     ///
     /// ```
-    /// use rayon::prelude::*;
+    /// use satin::prelude::*;
     ///
     /// let s =
     ///     ['a', 'b', 'c', 'd', 'e']
@@ -1220,7 +1220,7 @@ pub trait ParallelIterator: Sized + Send {
     /// do this instead:
     ///
     /// ```
-    /// use rayon::prelude::*;
+    /// use satin::prelude::*;
     ///
     /// let s =
     ///     ['a', 'b', 'c', 'd', 'e']
@@ -1251,7 +1251,7 @@ pub trait ParallelIterator: Sized + Send {
     /// combination in effect:
     ///
     /// ```
-    /// use rayon::prelude::*;
+    /// use satin::prelude::*;
     ///
     /// let bytes = 0..22_u8;
     /// let sum = bytes.into_par_iter()
@@ -1279,7 +1279,7 @@ pub trait ParallelIterator: Sized + Send {
     /// # Examples
     ///
     /// ```
-    /// use rayon::prelude::*;
+    /// use satin::prelude::*;
     ///
     /// let bytes = 0..22_u8;
     /// let sum = bytes.into_par_iter()
@@ -1312,7 +1312,7 @@ pub trait ParallelIterator: Sized + Send {
     /// # Examples
     ///
     /// ```
-    /// use rayon::prelude::*;
+    /// use satin::prelude::*;
     ///
     /// let bytes = 0..22_u8;
     /// let sum = bytes.into_par_iter()
@@ -1340,7 +1340,7 @@ pub trait ParallelIterator: Sized + Send {
     /// [`try_fold()`]: #method.try_fold
     ///
     /// ```
-    /// use rayon::prelude::*;
+    /// use satin::prelude::*;
     ///
     /// let bytes = 0..22_u8;
     /// let sum = bytes.into_par_iter()
@@ -1375,7 +1375,7 @@ pub trait ParallelIterator: Sized + Send {
     /// # Examples
     ///
     /// ```
-    /// use rayon::prelude::*;
+    /// use satin::prelude::*;
     ///
     /// let a = [1, 5, 7];
     ///
@@ -1406,7 +1406,7 @@ pub trait ParallelIterator: Sized + Send {
     /// # Examples
     ///
     /// ```
-    /// use rayon::prelude::*;
+    /// use satin::prelude::*;
     ///
     /// fn factorial(n: u32) -> u32 {
     ///    (1..n+1).into_par_iter().product()
@@ -1436,7 +1436,7 @@ pub trait ParallelIterator: Sized + Send {
     /// # Examples
     ///
     /// ```
-    /// use rayon::prelude::*;
+    /// use satin::prelude::*;
     ///
     /// let a = [45, 74, 32];
     ///
@@ -1464,7 +1464,7 @@ pub trait ParallelIterator: Sized + Send {
     /// # Examples
     ///
     /// ```
-    /// use rayon::prelude::*;
+    /// use satin::prelude::*;
     ///
     /// let a = [-3_i32, 77, 53, 240, -1];
     ///
@@ -1495,7 +1495,7 @@ pub trait ParallelIterator: Sized + Send {
     /// # Examples
     ///
     /// ```
-    /// use rayon::prelude::*;
+    /// use satin::prelude::*;
     ///
     /// let a = [-3_i32, 34, 2, 5, -10, -3, -23];
     ///
@@ -1534,7 +1534,7 @@ pub trait ParallelIterator: Sized + Send {
     /// # Examples
     ///
     /// ```
-    /// use rayon::prelude::*;
+    /// use satin::prelude::*;
     ///
     /// let a = [45, 74, 32];
     ///
@@ -1562,7 +1562,7 @@ pub trait ParallelIterator: Sized + Send {
     /// # Examples
     ///
     /// ```
-    /// use rayon::prelude::*;
+    /// use satin::prelude::*;
     ///
     /// let a = [-3_i32, 77, 53, 240, -1];
     ///
@@ -1593,7 +1593,7 @@ pub trait ParallelIterator: Sized + Send {
     /// # Examples
     ///
     /// ```
-    /// use rayon::prelude::*;
+    /// use satin::prelude::*;
     ///
     /// let a = [-3_i32, 34, 2, 5, -10, -3, -23];
     ///
@@ -1624,7 +1624,7 @@ pub trait ParallelIterator: Sized + Send {
     /// # Examples
     ///
     /// ```
-    /// use rayon::prelude::*;
+    /// use satin::prelude::*;
     ///
     /// let a = [0, 1, 2];
     /// let b = [9, 8, 7];
@@ -1657,7 +1657,7 @@ pub trait ParallelIterator: Sized + Send {
     /// # Examples
     ///
     /// ```
-    /// use rayon::prelude::*;
+    /// use satin::prelude::*;
     ///
     /// let a = [1, 2, 3, 3];
     ///
@@ -1690,7 +1690,7 @@ pub trait ParallelIterator: Sized + Send {
     /// # Examples
     ///
     /// ```
-    /// use rayon::prelude::*;
+    /// use satin::prelude::*;
     ///
     /// let a = [1, 2, 3, 3];
     ///
@@ -1719,7 +1719,7 @@ pub trait ParallelIterator: Sized + Send {
     /// # Examples
     ///
     /// ```
-    /// use rayon::prelude::*;
+    /// use satin::prelude::*;
     ///
     /// let a = [1, 2, 3, 3];
     ///
@@ -1749,7 +1749,7 @@ pub trait ParallelIterator: Sized + Send {
     /// # Examples
     ///
     /// ```
-    /// use rayon::prelude::*;
+    /// use satin::prelude::*;
     ///
     /// let c = ["lol", "NaN", "5", "5"];
     ///
@@ -1783,7 +1783,7 @@ pub trait ParallelIterator: Sized + Send {
     /// # Examples
     ///
     /// ```
-    /// use rayon::prelude::*;
+    /// use satin::prelude::*;
     ///
     /// let c = ["lol", "NaN", "2", "5"];
     ///
@@ -1817,7 +1817,7 @@ pub trait ParallelIterator: Sized + Send {
     /// # Examples
     ///
     /// ```
-    /// use rayon::prelude::*;
+    /// use satin::prelude::*;
     ///
     /// let c = ["lol", "NaN", "2", "5"];
     ///
@@ -1855,7 +1855,7 @@ pub trait ParallelIterator: Sized + Send {
     /// # Examples
     ///
     /// ```
-    /// use rayon::prelude::*;
+    /// use satin::prelude::*;
     ///
     /// let a = [0, 12, 3, 4, 0, 23, 0];
     ///
@@ -1877,7 +1877,7 @@ pub trait ParallelIterator: Sized + Send {
     /// # Examples
     ///
     /// ```
-    /// use rayon::prelude::*;
+    /// use satin::prelude::*;
     ///
     /// let a = [0, 12, 3, 4, 0, 23, 0];
     ///
@@ -1903,7 +1903,7 @@ pub trait ParallelIterator: Sized + Send {
     /// # Examples
     ///
     /// ```
-    /// use rayon::prelude::*;
+    /// use satin::prelude::*;
     /// use std::sync::atomic::{AtomicUsize, Ordering};
     ///
     /// let counter = AtomicUsize::new(0);
@@ -1936,7 +1936,7 @@ pub trait ParallelIterator: Sized + Send {
     /// to stop processing other items sooner, with the cost of additional
     /// synchronization overhead, which may also inhibit some optimizations.
     ///
-    /// [`join`]: crate::join()#panics
+    /// [`join`]: forte::join()#panics
     ///
     /// # Examples
     ///
@@ -1945,7 +1945,7 @@ pub trait ParallelIterator: Sized + Send {
     /// panic is finally propagated.
     ///
     /// ```should_panic
-    /// use rayon::prelude::*;
+    /// use satin::prelude::*;
     /// use std::{thread, time};
     ///
     /// (0..1_000_000)
@@ -1979,7 +1979,7 @@ pub trait ParallelIterator: Sized + Send {
     /// # Examples
     ///
     /// ```
-    /// use rayon::prelude::*;
+    /// use satin::prelude::*;
     ///
     /// let sync_vec: Vec<_> = (0..100).into_iter().collect();
     ///
@@ -1992,7 +1992,7 @@ pub trait ParallelIterator: Sized + Send {
     /// for paired items:
     ///
     /// ```
-    /// use rayon::prelude::*;
+    /// use satin::prelude::*;
     ///
     /// let a = [(0, 1), (1, 2), (2, 3), (3, 4)];
     /// let (first, second): (Vec<_>, Vec<_>) = a.into_par_iter().collect();
@@ -2004,8 +2004,8 @@ pub trait ParallelIterator: Sized + Send {
     /// Or like [`partition_map`](#method.partition_map) for `Either` items:
     ///
     /// ```
-    /// use rayon::prelude::*;
-    /// use rayon::iter::Either;
+    /// use satin::prelude::*;
+    /// use satin::iter::Either;
     ///
     /// let (left, right): (Vec<_>, Vec<_>) = (0..8).into_par_iter().map(|x| {
     ///     if x % 2 == 0 {
@@ -2022,8 +2022,8 @@ pub trait ParallelIterator: Sized + Send {
     /// You can even collect an arbitrarily-nested combination of pairs and `Either`:
     ///
     /// ```
-    /// use rayon::prelude::*;
-    /// use rayon::iter::Either;
+    /// use satin::prelude::*;
+    /// use satin::iter::Either;
     ///
     /// let (first, (left, right)): (Vec<_>, (Vec<_>, Vec<_>))
     ///     = (0..8).into_par_iter().map(|x| {
@@ -2043,8 +2043,8 @@ pub trait ParallelIterator: Sized + Send {
     /// `Result` or `Option` types:
     ///
     /// ```
-    /// use rayon::prelude::*;
-    /// use rayon::iter::Either;
+    /// use satin::prelude::*;
+    /// use satin::iter::Either;
     ///
     /// let result: Result<(Vec<_>, (Vec<_>, Vec<_>)), _>
     ///     = (0..8).into_par_iter().map(|x| {
@@ -2078,7 +2078,7 @@ pub trait ParallelIterator: Sized + Send {
     /// # Examples
     ///
     /// ```
-    /// use rayon::prelude::*;
+    /// use satin::prelude::*;
     ///
     /// let a = [(0, 1), (1, 2), (2, 3), (3, 4)];
     ///
@@ -2091,7 +2091,7 @@ pub trait ParallelIterator: Sized + Send {
     /// Nested pairs can be unzipped too.
     ///
     /// ```
-    /// use rayon::prelude::*;
+    /// use satin::prelude::*;
     ///
     /// let (values, (squares, cubes)): (Vec<_>, (Vec<_>, Vec<_>)) = (0..4).into_par_iter()
     ///     .map(|i| (i, (i * i, i * i * i)))
@@ -2124,7 +2124,7 @@ pub trait ParallelIterator: Sized + Send {
     /// # Examples
     ///
     /// ```
-    /// use rayon::prelude::*;
+    /// use satin::prelude::*;
     ///
     /// let (left, right): (Vec<_>, Vec<_>) = (0..8).into_par_iter().partition(|x| x % 2 == 0);
     ///
@@ -2147,8 +2147,8 @@ pub trait ParallelIterator: Sized + Send {
     /// # Examples
     ///
     /// ```
-    /// use rayon::prelude::*;
-    /// use rayon::iter::Either;
+    /// use satin::prelude::*;
+    /// use satin::iter::Either;
     ///
     /// let (left, right): (Vec<_>, Vec<_>) = (0..8).into_par_iter()
     ///     .partition_map(|x| {
@@ -2166,8 +2166,8 @@ pub trait ParallelIterator: Sized + Send {
     /// Nested `Either` enums can be split as well.
     ///
     /// ```
-    /// use rayon::prelude::*;
-    /// use rayon::iter::Either::*;
+    /// use satin::prelude::*;
+    /// use satin::iter::Either::*;
     ///
     /// let ((fizzbuzz, fizz), (buzz, other)): ((Vec<_>, Vec<_>), (Vec<_>, Vec<_>)) = (1..20)
     ///     .into_par_iter()
@@ -2199,7 +2199,7 @@ pub trait ParallelIterator: Sized + Send {
     /// # Examples
     ///
     /// ```
-    /// use rayon::prelude::*;
+    /// use satin::prelude::*;
     ///
     /// let x = vec![1, 2, 3];
     /// let r: Vec<_> = x.into_par_iter().intersperse(-1).collect();
@@ -2223,7 +2223,7 @@ pub trait ParallelIterator: Sized + Send {
     /// # Examples
     ///
     /// ```
-    /// use rayon::prelude::*;
+    /// use satin::prelude::*;
     ///
     /// let result: Vec<_> = (0..100)
     ///     .into_par_iter()
@@ -2248,7 +2248,7 @@ pub trait ParallelIterator: Sized + Send {
     /// # Examples
     ///
     /// ```
-    /// use rayon::prelude::*;
+    /// use satin::prelude::*;
     ///
     /// let result: Vec<_> = (0..100)
     ///     .into_par_iter()
@@ -2280,7 +2280,7 @@ pub trait ParallelIterator: Sized + Send {
     /// # Examples
     ///
     /// ```
-    /// use rayon::prelude::*;
+    /// use satin::prelude::*;
     ///
     /// let result: Vec<_> = (0..100)
     ///     .into_par_iter()
@@ -2292,7 +2292,7 @@ pub trait ParallelIterator: Sized + Send {
     /// ```
     ///
     /// ```
-    /// use rayon::prelude::*;
+    /// use satin::prelude::*;
     /// use std::sync::atomic::AtomicUsize;
     /// use std::sync::atomic::Ordering::Relaxed;
     ///
@@ -2333,7 +2333,7 @@ pub trait ParallelIterator: Sized + Send {
     /// # Examples
     ///
     /// ```
-    /// use rayon::prelude::*;
+    /// use satin::prelude::*;
     ///
     /// let result: Vec<_> = (0..100)
     ///     .into_par_iter()
@@ -2369,7 +2369,7 @@ pub trait ParallelIterator: Sized + Send {
     ///
     /// ```
     /// # use std::collections::LinkedList;
-    /// use rayon::prelude::*;
+    /// use satin::prelude::*;
     ///
     /// let result: LinkedList<Vec<_>> = (0..=100)
     ///     .into_par_iter()
@@ -2463,13 +2463,13 @@ pub trait IndexedParallelIterator: ParallelIterator {
     /// # Examples
     ///
     /// ```
-    /// use rayon::prelude::*;
+    /// use satin::prelude::*;
     /// assert_eq!((0..10_000).into_par_iter()
     ///                       .by_exponential_blocks()
     ///                       .find_first(|&e| e==4_999), Some(4_999))
     /// ```
     ///
-    /// In this example, without blocks, rayon will split the initial range into two but all work
+    /// In this example, without blocks, satin will split the initial range into two but all work
     /// on the right hand side (from 5,000 onwards) is **useless** since the sequential algorithm
     /// never goes there. This means that if two threads are used there will be **no** speedup **at
     /// all**.
@@ -2496,7 +2496,7 @@ pub trait IndexedParallelIterator: ParallelIterator {
     ///
     /// # Example
     /// ```
-    /// use rayon::prelude::*;
+    /// use satin::prelude::*;
     /// // during most reductions v1 and v2 fit the cache
     /// let v = (0u32..10_000_000)
     ///     .into_par_iter()
@@ -2519,7 +2519,7 @@ pub trait IndexedParallelIterator: ParallelIterator {
     /// # Examples
     ///
     /// ```
-    /// use rayon::prelude::*;
+    /// use satin::prelude::*;
     ///
     /// // any prior data will be cleared
     /// let mut vec = vec![-1, -2, -3];
@@ -2541,7 +2541,7 @@ pub trait IndexedParallelIterator: ParallelIterator {
     /// # Examples
     ///
     /// ```
-    /// use rayon::prelude::*;
+    /// use satin::prelude::*;
     ///
     /// // any prior data will be cleared
     /// let mut left = vec![42; 10];
@@ -2572,7 +2572,7 @@ pub trait IndexedParallelIterator: ParallelIterator {
     /// # Examples
     ///
     /// ```
-    /// use rayon::prelude::*;
+    /// use satin::prelude::*;
     ///
     /// let result: Vec<_> = (1..4)
     ///     .into_par_iter()
@@ -2594,7 +2594,7 @@ pub trait IndexedParallelIterator: ParallelIterator {
     /// Will panic if `self` and `zip_op` are not the same length.
     ///
     /// ```should_panic
-    /// use rayon::prelude::*;
+    /// use satin::prelude::*;
     ///
     /// let one = [1u8];
     /// let two = [2u8, 2];
@@ -2630,7 +2630,7 @@ pub trait IndexedParallelIterator: ParallelIterator {
     /// # Examples
     ///
     /// ```
-    /// use rayon::prelude::*;
+    /// use satin::prelude::*;
     /// let (x, y) = (vec![1, 2], vec![3, 4, 5, 6]);
     /// let r: Vec<i32> = x.into_par_iter().interleave(y).collect();
     /// assert_eq!(r, vec![1, 3, 2, 4, 5, 6]);
@@ -2648,7 +2648,7 @@ pub trait IndexedParallelIterator: ParallelIterator {
     /// # Examples
     ///
     /// ```
-    /// use rayon::prelude::*;
+    /// use satin::prelude::*;
     /// let (x, y) = (vec![1, 2, 3, 4], vec![5, 6]);
     /// let r: Vec<i32> = x.into_par_iter().interleave_shortest(y).collect();
     /// assert_eq!(r, vec![1, 5, 2, 6, 3]);
@@ -2677,7 +2677,7 @@ pub trait IndexedParallelIterator: ParallelIterator {
     /// # Examples
     ///
     /// ```
-    /// use rayon::prelude::*;
+    /// use satin::prelude::*;
     /// let a = vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
     /// let r: Vec<Vec<i32>> = a.into_par_iter().chunks(3).collect();
     /// assert_eq!(r, vec![vec![1,2,3], vec![4,5,6], vec![7,8,9], vec![10]]);
@@ -2713,7 +2713,7 @@ pub trait IndexedParallelIterator: ParallelIterator {
     /// # Examples
     ///
     /// ```
-    /// use rayon::prelude::*;
+    /// use satin::prelude::*;
     /// let nums = vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
     /// let chunk_sums = nums.into_par_iter().fold_chunks(2, || 0, |a, n| a + n).collect::<Vec<_>>();
     /// assert_eq!(chunk_sums, vec![3, 7, 11, 15, 19]);
@@ -2751,7 +2751,7 @@ pub trait IndexedParallelIterator: ParallelIterator {
     /// # Examples
     ///
     /// ```
-    /// use rayon::prelude::*;
+    /// use satin::prelude::*;
     /// let nums = vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
     /// let chunk_sums = nums.into_par_iter().fold_chunks_with(2, 0, |a, n| a + n).collect::<Vec<_>>();
     /// assert_eq!(chunk_sums, vec![3, 7, 11, 15, 19]);
@@ -2777,7 +2777,7 @@ pub trait IndexedParallelIterator: ParallelIterator {
     /// # Examples
     ///
     /// ```
-    /// use rayon::prelude::*;
+    /// use satin::prelude::*;
     /// use std::cmp::Ordering::*;
     ///
     /// let x = vec![1, 2, 3];
@@ -2814,7 +2814,7 @@ pub trait IndexedParallelIterator: ParallelIterator {
     /// # Examples
     ///
     /// ```
-    /// use rayon::prelude::*;
+    /// use satin::prelude::*;
     /// use std::cmp::Ordering::*;
     ///
     /// let x = vec![1.0, 2.0, 3.0];
@@ -2919,7 +2919,7 @@ pub trait IndexedParallelIterator: ParallelIterator {
     /// # Examples
     ///
     /// ```
-    /// use rayon::prelude::*;
+    /// use satin::prelude::*;
     ///
     /// let chars = vec!['a', 'b', 'c'];
     /// let result: Vec<_> = chars
@@ -2938,7 +2938,7 @@ pub trait IndexedParallelIterator: ParallelIterator {
     /// # Examples
     ///
     /// ```
-    ///use rayon::prelude::*;
+    ///use satin::prelude::*;
     ///
     /// let range = (3..10);
     /// let result: Vec<i32> = range
@@ -2957,7 +2957,7 @@ pub trait IndexedParallelIterator: ParallelIterator {
     /// # Examples
     ///
     /// ```
-    /// use rayon::prelude::*;
+    /// use satin::prelude::*;
     ///
     /// let result: Vec<_> = (0..100)
     ///     .into_par_iter()
@@ -2975,7 +2975,7 @@ pub trait IndexedParallelIterator: ParallelIterator {
     /// # Examples
     ///
     /// ```
-    /// use rayon::prelude::*;
+    /// use satin::prelude::*;
     ///
     /// let result: Vec<_> = (0..100)
     ///     .into_par_iter()
@@ -2997,7 +2997,7 @@ pub trait IndexedParallelIterator: ParallelIterator {
     /// # Examples
     ///
     /// ```
-    /// use rayon::prelude::*;
+    /// use satin::prelude::*;
     ///
     /// let a = [1, 2, 3, 3];
     ///
@@ -3035,7 +3035,7 @@ pub trait IndexedParallelIterator: ParallelIterator {
     /// # Examples
     ///
     /// ```
-    /// use rayon::prelude::*;
+    /// use satin::prelude::*;
     ///
     /// let a = [1, 2, 3, 3];
     ///
@@ -3072,7 +3072,7 @@ pub trait IndexedParallelIterator: ParallelIterator {
     /// # Examples
     ///
     /// ```
-    /// use rayon::prelude::*;
+    /// use satin::prelude::*;
     ///
     /// let a = [1, 2, 3, 3];
     ///
@@ -3111,7 +3111,7 @@ pub trait IndexedParallelIterator: ParallelIterator {
     /// # Examples
     ///
     /// ```
-    /// use rayon::prelude::*;
+    /// use satin::prelude::*;
     ///
     /// let primes = vec![2, 3, 5, 7, 11, 13, 17, 19, 23, 29];
     ///
@@ -3136,7 +3136,7 @@ pub trait IndexedParallelIterator: ParallelIterator {
     /// # Examples
     ///
     /// ```
-    /// use rayon::prelude::*;
+    /// use satin::prelude::*;
     ///
     /// let result: Vec<_> = (0..5)
     ///     .into_par_iter()
@@ -3150,7 +3150,7 @@ pub trait IndexedParallelIterator: ParallelIterator {
     }
 
     /// Sets the minimum length of iterators desired to process in each
-    /// rayon job.  Rayon will not split any smaller than this length, but
+    /// satin job.  Satin will not split any smaller than this length, but
     /// of course an iterator could already be smaller to begin with.
     ///
     /// Producers like `zip` and `interleave` will use greater of the two
@@ -3161,7 +3161,7 @@ pub trait IndexedParallelIterator: ParallelIterator {
     /// # Examples
     ///
     /// ```
-    /// use rayon::prelude::*;
+    /// use satin::prelude::*;
     ///
     /// let min = (0..1_000_000)
     ///     .into_par_iter()
@@ -3176,7 +3176,7 @@ pub trait IndexedParallelIterator: ParallelIterator {
     }
 
     /// Sets the maximum length of iterators desired to process in each
-    /// rayon job.  Rayon will try to split at least below this length,
+    /// satin job.  Satin will try to split at least below this length,
     /// unless that would put it below the length from `with_min_len()`.
     /// For example, given min=10 and max=15, a length of 16 will not be
     /// split any further.
@@ -3189,7 +3189,7 @@ pub trait IndexedParallelIterator: ParallelIterator {
     /// # Examples
     ///
     /// ```
-    /// use rayon::prelude::*;
+    /// use satin::prelude::*;
     ///
     /// let max = (0..1_000_000)
     ///     .into_par_iter()
@@ -3209,7 +3209,7 @@ pub trait IndexedParallelIterator: ParallelIterator {
     /// # Examples
     ///
     /// ```
-    /// use rayon::prelude::*;
+    /// use satin::prelude::*;
     ///
     /// let par_iter = (0..100).into_par_iter().zip(vec![0; 10]);
     /// assert_eq!(par_iter.len(), 10);
@@ -3267,7 +3267,7 @@ pub trait IndexedParallelIterator: ParallelIterator {
 /// Implementing `FromParallelIterator` for your type:
 ///
 /// ```
-/// use rayon::prelude::*;
+/// use satin::prelude::*;
 ///
 /// struct BlackHole {
 ///     mass: usize,
@@ -3319,7 +3319,7 @@ where
 /// Implementing `ParallelExtend` for your type:
 ///
 /// ```
-/// use rayon::prelude::*;
+/// use satin::prelude::*;
 ///
 /// struct BlackHole {
 ///     mass: usize,
@@ -3350,7 +3350,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use rayon::prelude::*;
+    /// use satin::prelude::*;
     ///
     /// let mut vec = vec![];
     /// vec.par_extend(0..5);
@@ -3384,7 +3384,7 @@ pub trait ParallelDrainFull {
     /// # Examples
     ///
     /// ```
-    /// use rayon::prelude::*;
+    /// use satin::prelude::*;
     /// use std::collections::{BinaryHeap, HashSet};
     ///
     /// let squares: HashSet<i32> = (0..10).map(|x| x * x).collect();
@@ -3425,7 +3425,7 @@ pub trait ParallelDrainRange<Idx = usize> {
     /// # Examples
     ///
     /// ```
-    /// use rayon::prelude::*;
+    /// use satin::prelude::*;
     ///
     /// let squares: Vec<i32> = (0..10).map(|x| x * x).collect();
     ///
@@ -3478,7 +3478,7 @@ pub trait ParallelDrainRange<Idx = usize> {
 
 /// Clone of `std::ops::Try`, until that is someday stabilized.
 ///
-/// Implementing this trait is not permitted outside of `rayon`.
+/// Implementing this trait is not permitted outside of `satin`.
 trait Try {
     type Output;
     type Residual;

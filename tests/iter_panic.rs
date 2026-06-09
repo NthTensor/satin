@@ -1,5 +1,4 @@
-use rayon::ThreadPoolBuilder;
-use rayon::prelude::*;
+use satin::prelude::*;
 use std::ops::Range;
 use std::panic::{self, UnwindSafe};
 use std::sync::atomic::{AtomicUsize, Ordering};
@@ -19,14 +18,16 @@ fn iter_panic() {
     ITER.into_par_iter().for_each(|i| check(&i));
 }
 
+// A pool with 0 extra workers: the calling thread is the only worker,
+// giving deterministic single-threaded behavior.
+static SINGLE_THREAD_POOL: forte::ThreadPool = forte::ThreadPool::new();
+
 #[test]
 #[cfg_attr(not(panic = "unwind"), ignore)]
 fn iter_panic_fuse() {
     // We only use a single thread in order to make the behavior
     // of 'panic_fuse' deterministic
-    let pool = ThreadPoolBuilder::new().num_threads(1).build().unwrap();
-
-    pool.install(|| {
+    SINGLE_THREAD_POOL.with_worker(|_| {
         fn count(iter: impl ParallelIterator + UnwindSafe) -> usize {
             let count = AtomicUsize::new(0);
             let result = panic::catch_unwind(|| {

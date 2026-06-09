@@ -5,7 +5,7 @@
 //!
 //! Note: [`ParallelString::par_split()`] and [`par_split_terminator()`]
 //! reference a `Pattern` trait which is not visible outside this crate.
-//! This trait is intentionally kept private, for use only by Rayon itself.
+//! This trait is intentionally kept private, for use only by Satin itself.
 //! It is implemented for `char`, `&[char]`, `[char; N]`, `&[char; N]`,
 //! and any function or closure `F: Fn(char) -> bool + Sync + Send`.
 //!
@@ -66,7 +66,7 @@ pub trait ParallelString {
     /// # Examples
     ///
     /// ```
-    /// use rayon::prelude::*;
+    /// use satin::prelude::*;
     /// let max = "hello".par_chars().max_by_key(|c| *c as i32);
     /// assert_eq!(Some('o'), max);
     /// ```
@@ -81,7 +81,7 @@ pub trait ParallelString {
     /// # Examples
     ///
     /// ```
-    /// use rayon::prelude::*;
+    /// use satin::prelude::*;
     /// let min = "hello".par_char_indices().min_by_key(|&(_i, c)| c as i32);
     /// assert_eq!(Some((1, 'e')), min);
     /// ```
@@ -101,7 +101,7 @@ pub trait ParallelString {
     /// # Examples
     ///
     /// ```
-    /// use rayon::prelude::*;
+    /// use satin::prelude::*;
     /// let max = "hello".par_bytes().max();
     /// assert_eq!(Some(b'o'), max);
     /// ```
@@ -119,7 +119,7 @@ pub trait ParallelString {
     /// # Examples
     ///
     /// ```
-    /// use rayon::prelude::*;
+    /// use satin::prelude::*;
     ///
     /// let max = "hello".par_encode_utf16().max();
     /// assert_eq!(Some(b'o' as u16), max);
@@ -145,7 +145,7 @@ pub trait ParallelString {
     /// # Examples
     ///
     /// ```
-    /// use rayon::prelude::*;
+    /// use satin::prelude::*;
     /// let total = "1, 2, buckle, 3, 4, door"
     ///    .par_split(',')
     ///    .filter_map(|s| s.trim().parse::<i32>().ok())
@@ -168,7 +168,7 @@ pub trait ParallelString {
     /// # Examples
     ///
     /// ```
-    /// use rayon::prelude::*;
+    /// use satin::prelude::*;
     /// let lines: Vec<_> = "Mary had a little lamb\nlittle lamb\nlittle lamb."
     ///    .par_split_inclusive('\n')
     ///    .collect();
@@ -191,7 +191,7 @@ pub trait ParallelString {
     /// # Examples
     ///
     /// ```
-    /// use rayon::prelude::*;
+    /// use satin::prelude::*;
     /// let parts: Vec<_> = "((1 + 3) * 2)"
     ///     .par_split_terminator(|c| c == '(' || c == ')')
     ///     .collect();
@@ -210,7 +210,7 @@ pub trait ParallelString {
     /// # Examples
     ///
     /// ```
-    /// use rayon::prelude::*;
+    /// use satin::prelude::*;
     /// let lengths: Vec<_> = "hello world\nfizbuzz"
     ///     .par_lines()
     ///     .map(|l| l.len())
@@ -232,7 +232,7 @@ pub trait ParallelString {
     /// # Examples
     ///
     /// ```
-    /// use rayon::prelude::*;
+    /// use satin::prelude::*;
     /// let longest = "which is the longest word?"
     ///     .par_split_whitespace()
     ///     .max_by_key(|word| word.len());
@@ -242,7 +242,7 @@ pub trait ParallelString {
     /// All kinds of whitespace are considered:
     ///
     /// ```
-    /// use rayon::prelude::*;
+    /// use satin::prelude::*;
     /// let words: Vec<&str> = " Mary   had\ta\u{2009}little  \n\t lamb"
     ///     .par_split_whitespace()
     ///     .collect();
@@ -252,7 +252,7 @@ pub trait ParallelString {
     /// If the string is empty or all whitespace, the iterator yields no string slices:
     ///
     /// ```
-    /// use rayon::prelude::*;
+    /// use satin::prelude::*;
     /// assert_eq!("".par_split_whitespace().count(), 0);
     /// assert_eq!("   ".par_split_whitespace().count(), 0);
     /// ```
@@ -269,7 +269,7 @@ pub trait ParallelString {
     /// # Examples
     ///
     /// ```
-    /// use rayon::prelude::*;
+    /// use satin::prelude::*;
     /// let longest = "which is the longest word?"
     ///     .par_split_ascii_whitespace()
     ///     .max_by_key(|word| word.len());
@@ -279,7 +279,7 @@ pub trait ParallelString {
     /// All kinds of ASCII whitespace are considered, but not Unicode `White_Space`:
     ///
     /// ```
-    /// use rayon::prelude::*;
+    /// use satin::prelude::*;
     /// let words: Vec<&str> = " Mary   had\ta\u{2009}little  \n\t lamb"
     ///     .par_split_ascii_whitespace()
     ///     .collect();
@@ -289,7 +289,7 @@ pub trait ParallelString {
     /// If the string is empty or all ASCII whitespace, the iterator yields no string slices:
     ///
     /// ```
-    /// use rayon::prelude::*;
+    /// use satin::prelude::*;
     /// assert_eq!("".par_split_whitespace().count(), 0);
     /// assert_eq!("   ".par_split_whitespace().count(), 0);
     /// ```
@@ -307,7 +307,7 @@ pub trait ParallelString {
     /// # Examples
     ///
     /// ```
-    /// use rayon::prelude::*;
+    /// use satin::prelude::*;
     /// let total = "1, 2, buckle, 3, 4, door"
     ///    .par_matches(char::is_numeric)
     ///    .map(|s| s.parse::<i32>().expect("digit"))
@@ -332,7 +332,7 @@ pub trait ParallelString {
     /// # Examples
     ///
     /// ```
-    /// use rayon::prelude::*;
+    /// use satin::prelude::*;
     /// let digits: Vec<_> = "1, 2, buckle, 3, 4, door"
     ///    .par_match_indices(char::is_numeric)
     ///    .collect();
@@ -364,7 +364,7 @@ impl ParallelString for str {
 /// nicer to have its basic existence and implementors public while keeping
 /// all of the methods private.
 ///
-/// Implementing this trait is not permitted outside of `rayon`.
+/// Implementing this trait is not permitted outside of `satin`.
 trait Pattern: Sized + Sync + Send {
     fn find_in(&self, haystack: &str) -> Option<usize>;
     fn rfind_in(&self, haystack: &str) -> Option<usize>;

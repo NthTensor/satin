@@ -1,6 +1,6 @@
 #![type_length_limit = "500000"]
 
-use rayon::prelude::*;
+use satin::prelude::*;
 
 #[test]
 fn type_length_limit() {

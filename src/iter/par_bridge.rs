@@ -1,19 +1,15 @@
-#[cfg(not(feature = "web_spin_lock"))]
 use std::sync::Mutex;
-
-#[cfg(feature = "web_spin_lock")]
-use wasm_sync::Mutex;
 
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 
+use crate::iter::plumbing::{bridge_unindexed, Folder, UnindexedConsumer, UnindexedProducer};
 use crate::iter::ParallelIterator;
-use crate::iter::plumbing::{Folder, UnindexedConsumer, UnindexedProducer, bridge_unindexed};
-use crate::{current_num_threads, current_thread_index};
+use forte::{num_members, Worker};
 
 /// Conversion trait to convert an `Iterator` to a `ParallelIterator`.
 ///
 /// This creates a "bridge" from a sequential iterator to a parallel one, by distributing its items
-/// across the Rayon thread pool. This has the advantage of being able to parallelize just about
+/// across the Satin thread pool. This has the advantage of being able to parallelize just about
 /// anything, but the resulting `ParallelIterator` can be less efficient than if you started with
 /// `par_iter` instead. However, it can still be useful for iterators that are difficult to
 /// parallelize by other means, like channels or file or network I/O.
@@ -31,8 +27,8 @@ use crate::{current_num_threads, current_thread_index};
 /// use any of the `ParallelIterator` methods:
 ///
 /// ```
-/// use rayon::iter::ParallelBridge;
-/// use rayon::prelude::ParallelIterator;
+/// use satin::iter::ParallelBridge;
+/// use satin::prelude::ParallelIterator;
 /// use std::sync::mpsc::channel;
 ///
 /// let rx = {
@@ -83,7 +79,7 @@ where
     where
         C: UnindexedConsumer<Self::Item>,
     {
-        let num_threads = current_num_threads();
+        let num_threads = num_members();
         let threads_started: Vec<_> = (0..num_threads).map(|_| AtomicBool::new(false)).collect();
 
         bridge_unindexed(
@@ -119,12 +115,12 @@ impl<Iter: Iterator + Send> UnindexedProducer for &IterParallelProducer<'_, Iter
         F: Folder<Self::Item>,
     {
         // Guard against work-stealing-induced recursion, in case `Iter::next()`
-        // calls rayon internally, so we don't deadlock our mutex. We might also
+        // calls satin internally, so we don't deadlock our mutex. We might also
         // be recursing via `folder` methods, which doesn't present a mutex hazard,
         // but it's lower overhead for us to just check this once, rather than
         // updating additional shared state on every mutex lock/unlock.
-        // (If this isn't a rayon thread, then there's no work-stealing anyway...)
-        if let Some(i) = current_thread_index() {
+        // (If this isn't a forte worker, then there's no work-stealing anyway...)
+        if let Some(i) = Worker::map_current(|w| w.member_index()) {
             // Note: If the number of threads in the pool ever grows dynamically, then
             // we'll end up sharing flags and may falsely detect recursion -- that's
             // still fine for overall correctness, just not optimal for parallelism.

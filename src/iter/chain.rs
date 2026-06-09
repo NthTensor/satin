@@ -1,6 +1,6 @@
 use super::plumbing::*;
 use super::*;
-use rayon_core::join;
+use forte::join;
 use std::iter;
 
 /// `Chain` is an iterator that joins `b` after `a` in one continuous iterator.
@@ -45,7 +45,7 @@ where
             (consumer.split_off_left(), consumer, reducer)
         };
 
-        let (a, b) = join(|| a.drive_unindexed(left), || b.drive_unindexed(right));
+        let (a, b) = join(|_| a.drive_unindexed(left), |_| b.drive_unindexed(right));
         reducer.reduce(a, b)
     }
 
@@ -65,7 +65,7 @@ where
     {
         let Chain { a, b } = self;
         let (left, right, reducer) = consumer.split_at(a.len());
-        let (a, b) = join(|| a.drive(left), || b.drive(right));
+        let (a, b) = join(|_| a.drive(left), |_| b.drive(right));
         reducer.reduce(a, b)
     }
 

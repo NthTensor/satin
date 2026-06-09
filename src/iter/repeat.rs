@@ -22,8 +22,8 @@ pub struct Repeat<T> {
 /// # Examples
 ///
 /// ```
-/// use rayon::prelude::*;
-/// use rayon::iter::repeat;
+/// use satin::prelude::*;
+/// use satin::iter::repeat;
 /// let x: Vec<(i32, i32)> = repeat(22).zip(0..3).collect();
 /// assert_eq!(x, vec![(22, 0), (22, 1), (22, 2)]);
 /// ```
@@ -118,8 +118,8 @@ pub struct RepeatN<T> {
 /// # Examples
 ///
 /// ```
-/// use rayon::prelude::*;
-/// use rayon::iter::repeat_n;
+/// use satin::prelude::*;
+/// use satin::iter::repeat_n;
 /// let x: Vec<(i32, i32)> = repeat_n(22, 3).zip(0..3).collect();
 /// assert_eq!(x, vec![(22, 0), (22, 1), (22, 2)]);
 /// ```

@@ -11,8 +11,8 @@ use std::fmt::{self, Debug};
 /// As a simple example, Rayon can recursively split ranges of indices
 ///
 /// ```
-/// use rayon::iter;
-/// use rayon::prelude::*;
+/// use satin::iter;
+/// use satin::prelude::*;
 /// use std::ops::Range;
 ///
 ///
@@ -30,7 +30,7 @@ use std::fmt::{self, Debug};
 ///     (r.start..midpoint, Some(midpoint..r.end))
 /// }
 ///
-/// // By using iter::split, Rayon will split the range until it has enough work
+/// // By using iter::split, Satin will split the range until it has enough work
 /// // to feed the CPU cores, then give us the resulting sub-ranges
 /// iter::split(0..4096, split_range1).for_each(|sub_range| {
 ///     // As our initial range had a power-of-two size, the final sub-ranges
@@ -44,8 +44,8 @@ use std::fmt::{self, Debug};
 /// numerical simulations:
 ///
 /// ```
-/// # use rayon::iter;
-/// # use rayon::prelude::*;
+/// # use satin::iter;
+/// # use satin::prelude::*;
 /// # use std::ops::Range;
 /// # type Range1D = Range<usize>;
 /// # fn split_range1(r: Range1D) -> (Range1D, Option<Range1D>) {
@@ -91,7 +91,7 @@ use std::fmt::{self, Debug};
 ///     }
 /// }
 ///
-/// // Again, rayon can handle the recursive splitting for us
+/// // Again, satin can handle the recursive splitting for us
 /// let range = Range2D { rx: 0..800, ry: 0..600 };
 /// iter::split(range, split_range2).for_each(|sub_range| {
 ///     // If the sub-ranges were indeed split by the largest dimension, then

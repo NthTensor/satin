@@ -1,25 +1,20 @@
-use std::collections::HashSet;
+use satin::prelude::*;
 
-use rayon::prelude::*;
-use rayon::*;
+// NOTE: forte does not support custom thread names via a pool builder.
+// This test verifies that parallel iteration works correctly across multiple threads.
+
+static NAMED_POOL: forte::ThreadPool = forte::ThreadPool::new();
 
 #[test]
 #[cfg_attr(any(target_os = "emscripten", target_family = "wasm"), ignore)]
-fn named_threads() {
-    ThreadPoolBuilder::new()
-        .thread_name(|i| format!("hello-name-test-{i}"))
-        .build_global()
-        .unwrap();
+fn parallel_threads() {
+    NAMED_POOL.resize_to(2);
 
     const N: usize = 10000;
 
-    let thread_names = (0..N)
-        .into_par_iter()
-        .flat_map(|_| ::std::thread::current().name().map(str::to_owned))
-        .collect::<HashSet<String>>();
+    let sum: usize = NAMED_POOL.with_worker(|_| {
+        (0..N).into_par_iter().sum()
+    });
 
-    let all_contains_name = thread_names
-        .iter()
-        .all(|name| name.starts_with("hello-name-test-"));
-    assert!(all_contains_name);
+    assert_eq!(sum, N * (N - 1) / 2);
 }

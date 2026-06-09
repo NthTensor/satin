@@ -5,7 +5,7 @@
 //! need to name one of the iterator types.
 //!
 //! ```
-//! use rayon::prelude::*;
+//! use satin::prelude::*;
 //!
 //! let r = (0..=100u64).into_par_iter()
 //!                     .sum();
@@ -26,7 +26,7 @@ use std::ops::RangeInclusive;
 /// which is only implemented for `u8`, `i8`, `u16`, `i16`, and `char`.
 ///
 /// ```
-/// use rayon::prelude::*;
+/// use satin::prelude::*;
 ///
 /// let p = (0..=25u16).into_par_iter()
 ///                   .zip(0..=25u16)
@@ -352,14 +352,15 @@ fn test_u128_opt_len() {
 #[test]
 #[cfg(target_pointer_width = "64")]
 fn test_usize_i64_overflow() {
-    use crate::ThreadPoolBuilder;
+    use forte::ThreadPool;
 
     let iter = (-2..=i64::MAX).into_par_iter();
     assert_eq!(iter.opt_len(), Some(i64::MAX as usize + 3));
 
     // always run with multiple threads to split into, or this will take forever...
-    let pool = ThreadPoolBuilder::new().num_threads(8).build().unwrap();
-    pool.install(|| assert_eq!(iter.find_last(|_| true), Some(i64::MAX)));
+    static POOL: ThreadPool = ThreadPool::new();
+    POOL.resize_to(8);
+    POOL.with_worker(|_| assert_eq!(iter.find_last(|_| true), Some(i64::MAX)));
 }
 
 #[test]
@@ -376,10 +377,8 @@ fn test_issue_833() {
     let pos = (0..=100).into_par_iter().position_any(|x| x == 50i16);
     assert_eq!(pos, Some(50usize));
 
-    assert!(
-        (0..=100)
-            .into_par_iter()
-            .zip(0..=100)
-            .all(|(a, b)| i16::eq(&a, &b))
-    );
+    assert!((0..=100)
+        .into_par_iter()
+        .zip(0..=100)
+        .all(|(a, b)| i16::eq(&a, &b)));
 }

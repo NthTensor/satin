@@ -4,8 +4,6 @@
 //!
 //! [r]: https://github.com/rayon-rs/rayon/blob/main/src/iter/plumbing/README.md
 
-use crate::join_context;
-
 use super::IndexedParallelIterator;
 
 /// The `ProducerCallback` trait is a kind of generic closure,
@@ -38,7 +36,7 @@ pub trait ProducerCallback<T> {
 /// two producers, one producing the items before that point, and one
 /// producing the items after that point (these two producers can then
 /// independently be split further, or be converted into iterators).
-/// In Rayon, this splitting is used to divide between threads.
+/// In Satin, this splitting is used to divide between threads.
 /// See [the `plumbing` README][r] for further details.
 ///
 /// Note that each producer will always produce a fixed number of
@@ -70,7 +68,7 @@ pub trait Producer: Send + Sized {
     /// all the way down to a single item. This can be raised higher
     /// using the [`with_min_len`] method, which will force us to
     /// create sequential tasks at a larger granularity. Note that
-    /// Rayon automatically normally attempts to adjust the size of
+    /// Satin automatically normally attempts to adjust the size of
     /// parallel splits to reduce overhead, so this should not be
     /// needed.
     ///
@@ -259,7 +257,7 @@ impl Splitter {
     #[inline]
     fn new() -> Splitter {
         Splitter {
-            splits: crate::current_num_threads(),
+            splits: forte::num_members(),
         }
     }
 
@@ -270,7 +268,7 @@ impl Splitter {
         if stolen {
             // This job was stolen!  Reset the number of desired splits to the
             // thread count, if that's more than we had remaining anyway.
-            self.splits = Ord::max(crate::current_num_threads(), self.splits / 2);
+            self.splits = Ord::max(forte::num_members(), self.splits / 2);
             true
         } else if splits > 0 {
             // We have splits remaining, make it so.
@@ -407,20 +405,12 @@ where
             let mid = len / 2;
             let (left_producer, right_producer) = producer.split_at(mid);
             let (left_consumer, right_consumer, reducer) = consumer.split_at(mid);
-            let (left_result, right_result) = join_context(
-                |context| {
-                    helper(
-                        mid,
-                        context.migrated(),
-                        splitter,
-                        left_producer,
-                        left_consumer,
-                    )
-                },
-                |context| {
+            let (left_result, right_result) = forte::join(
+                |w| helper(mid, w.migrated(), splitter, left_producer, left_consumer),
+                |w| {
                     helper(
                         len - mid,
-                        context.migrated(),
+                        w.migrated(),
                         splitter,
                         right_producer,
                         right_consumer,
@@ -462,9 +452,9 @@ where
                 let (reducer, left_consumer, right_consumer) =
                     (consumer.to_reducer(), consumer.split_off_left(), consumer);
                 let bridge = bridge_unindexed_producer_consumer;
-                let (left_result, right_result) = join_context(
-                    |context| bridge(context.migrated(), splitter, left_producer, left_consumer),
-                    |context| bridge(context.migrated(), splitter, right_producer, right_consumer),
+                let (left_result, right_result) = forte::join(
+                    |w| bridge(w.migrated(), splitter, left_producer, left_consumer),
+                    |w| bridge(w.migrated(), splitter, right_producer, right_consumer),
                 );
                 reducer.reduce(left_result, right_result)
             }

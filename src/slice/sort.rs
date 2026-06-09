@@ -19,9 +19,9 @@ use core::mem::{self, MaybeUninit};
 use core::ptr;
 use core::slice;
 
-use crate::SendPtr;
 use crate::iter::{IndexedParallelIterator, ParallelIterator};
 use crate::slice::ParallelSliceMut;
+use crate::SendPtr;
 
 // When dropped, copies from `src` into `dest`.
 struct InsertionHole<T> {
@@ -918,9 +918,9 @@ where
             }
         } else {
             // Sort the left and right half in parallel.
-            rayon_core::join(
-                || recurse(left, is_less, pred, limit),
-                || recurse(right, is_less, Some(pivot), limit),
+            forte::join(
+                |_| recurse(left, is_less, pred, limit),
+                |_| recurse(right, is_less, Some(pivot), limit),
             );
             break;
         }
@@ -1273,7 +1273,7 @@ where
 
 ////////////////////////////////////////////////////////////////////////////
 // Everything above this line is copied from `core::slice::sort` (with very minor tweaks).
-// Everything below this line is custom parallelization for rayon.
+// Everything below this line is custom parallelization for satin (copied from rayon).
 ////////////////////////////////////////////////////////////////////////////
 
 /// Splits two sorted slices so that they can be merged in parallel.
@@ -1388,9 +1388,9 @@ where
             // See the documentation of SendPtr for a full explanation
             let dest_l = SendPtr(dest);
             let dest_r = SendPtr(dest.add(left_l.len() + right_l.len()));
-            rayon_core::join(
-                move || par_merge(left_l, right_l, dest_l.get(), is_less),
-                move || par_merge(left_r, right_r, dest_r.get(), is_less),
+            forte::join(
+                move |_| par_merge(left_l, right_l, dest_l.get(), is_less),
+                move |_| par_merge(left_r, right_r, dest_r.get(), is_less),
             );
         }
         // Finally, `s` gets dropped if we used sequential merge, thus copying the remaining elements
@@ -1491,9 +1491,9 @@ unsafe fn merge_recurse<T, F>(
         // See the documentation of SendPtr for a full explanation
         let v = SendPtr(v);
         let buf = SendPtr(buf);
-        rayon_core::join(
-            move || merge_recurse(v.get(), buf.get(), left, !into_buf, is_less),
-            move || merge_recurse(v.get(), buf.get(), right, !into_buf, is_less),
+        forte::join(
+            move |_| merge_recurse(v.get(), buf.get(), left, !into_buf, is_less),
+            move |_| merge_recurse(v.get(), buf.get(), right, !into_buf, is_less),
         );
 
         // Everything went all right - recursive calls didn't panic.
@@ -1616,7 +1616,7 @@ mod tests {
     use super::heapsort;
     use super::split_for_merge;
     use rand::distr::Uniform;
-    use rand::{RngExt, rng};
+    use rand::{rng, RngExt};
 
     #[test]
     fn test_heapsort() {
@@ -1656,11 +1656,9 @@ mod tests {
     fn test_split_for_merge() {
         fn check(left: &[u32], right: &[u32]) {
             let (l, r) = split_for_merge(left, right, &|&a, &b| a < b);
-            assert!(
-                left[..l]
-                    .iter()
-                    .all(|&x| right[r..].iter().all(|&y| x <= y))
-            );
+            assert!(left[..l]
+                .iter()
+                .all(|&x| right[r..].iter().all(|&y| x <= y)));
             assert!(right[..r].iter().all(|&x| left[l..].iter().all(|&y| x < y)));
         }
 

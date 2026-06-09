@@ -76,7 +76,7 @@ where
     where
         C: UnindexedConsumer<Self::Item>,
     {
-        let first = crate::current_num_threads();
+        let first = forte::num_members();
         let callback = BlocksCallback {
             consumer,
             sizes: std::iter::successors(Some(first), exponential_size),

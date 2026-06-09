@@ -2,6 +2,8 @@ use super::noop::NoopConsumer;
 use super::plumbing::*;
 use super::*;
 
+use forte::Worker;
+
 /// `Skip` is an iterator that skips over the first `n` elements.
 /// This struct is created by the [`skip()`] method on [`IndexedParallelIterator`]
 ///
@@ -77,13 +79,14 @@ where
             where
                 P: Producer<Item = T>,
             {
-                crate::in_place_scope(|scope| {
+                forte::scope(|scope| {
                     let Self { callback, n } = self;
                     let (before_skip, after_skip) = base.split_at(n);
 
-                    // Run the skipped part separately for side effects.
-                    // We'll still get any panics propagated back by the scope.
-                    scope.spawn(move |_| bridge_producer_consumer(n, before_skip, NoopConsumer));
+                    // Run the skipped part for side effects first.
+                    scope.spawn(move |_: &Worker| {
+                        bridge_producer_consumer(n, before_skip, NoopConsumer)
+                    });
 
                     callback.callback(after_skip)
                 })

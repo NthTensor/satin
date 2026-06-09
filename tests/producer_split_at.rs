@@ -1,5 +1,5 @@
-use rayon::iter::plumbing::*;
-use rayon::prelude::*;
+use satin::iter::plumbing::*;
+use satin::prelude::*;
 use std::fmt::Debug;
 
 /// Stress-test indexes for `Producer::split_at`.
@@ -111,12 +111,12 @@ fn array() {
 
 #[test]
 fn empty() {
-    check(&[], rayon::iter::empty::<i32>);
+    check(&[], satin::iter::empty::<i32>);
 }
 
 #[test]
 fn once() {
-    check(&[42], || rayon::iter::once(42));
+    check(&[42], || satin::iter::once(42));
 }
 
 #[test]
@@ -139,7 +139,7 @@ fn range_inclusive() {
 #[test]
 fn repeat_n() {
     let v: Vec<_> = std::iter::repeat_n(1, 5).collect();
-    check(&v, || rayon::iter::repeat_n(1, 5));
+    check(&v, || satin::iter::repeat_n(1, 5));
 }
 
 #[test]

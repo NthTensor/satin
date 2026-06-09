@@ -1,4 +1,4 @@
-use rayon::prelude::*;
+use satin::prelude::*;
 
 #[test]
 fn half_open_correctness() {

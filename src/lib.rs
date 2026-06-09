@@ -1,29 +1,22 @@
-//! Rayon is a data-parallelism library that makes it easy to convert sequential
+//! Satin is a data-parallelism library that makes it easy to convert sequential
 //! computations into parallel.
 //!
 //! It is lightweight and convenient for introducing parallelism into existing
 //! code. It guarantees data-race free executions and takes advantage of
 //! parallelism when sensible, based on work-load at runtime.
 //!
-//! # How to use Rayon
+//! # How to use Satin
 //!
-//! There are two ways to use Rayon:
+//! Satin extends Forte with support for parallel itterators:
 //!
-//! - **High-level parallel constructs** are the simplest way to use Rayon and also
-//!   typically the most efficient.
-//!   - [Parallel iterators] make it easy to convert a sequential iterator to
-//!     execute in parallel.
-//!     - The [`ParallelIterator`] trait defines general methods for all parallel iterators.
-//!     - The [`IndexedParallelIterator`] trait adds methods for iterators that support random
-//!       access.
-//!   - The [`par_sort`] method sorts `&mut [T]` slices (or vectors) in parallel.
-//!   - [`par_extend`] can be used to efficiently grow collections with items produced
-//!     by a parallel iterator.
-//! - **Custom tasks** let you divide your work into parallel tasks yourself.
-//!   - [`join`] is used to subdivide a task into two pieces.
-//!   - [`scope`] creates a scope within which you can create any number of parallel tasks.
-//!   - [`ThreadPoolBuilder`] can be used to create your own thread pools or customize
-//!     the global one.
+//! * [Parallel iterators] make it easy to convert a sequential iterator to
+//!   execute in parallel.
+//!   * The [`ParallelIterator`] trait defines general methods for all parallel iterators.
+//!   * The [`IndexedParallelIterator`] trait adds methods for iterators that support random
+//!     access.
+//! * The [`par_sort`] method sorts `&mut [T]` slices (or vectors) in parallel.
+//! * [`par_extend`] can be used to efficiently grow collections with items produced
+//!   by a parallel iterator.
 //!
 //! [Parallel iterators]: iter
 //! [`par_sort`]: slice::ParallelSliceMut::par_sort
@@ -31,21 +24,21 @@
 //! [`ParallelIterator`]: iter::ParallelIterator
 //! [`IndexedParallelIterator`]: iter::IndexedParallelIterator
 //!
-//! # Basic usage and the Rayon prelude
+//! # Basic usage and the Satin prelude
 //!
-//! First, you will need to add `rayon` to your `Cargo.toml`.
+//! First, you will need to add `satin` to your `Cargo.toml`.
 //!
 //! Next, to use parallel iterators or the other high-level methods,
 //! you need to import several traits. Those traits are bundled into
-//! the module [`rayon::prelude`]. It is recommended that you import
-//! all of these traits at once by adding `use rayon::prelude::*` at
-//! the top of each module that uses Rayon methods.
+//! the module [`satin::prelude`]. It is recommended that you import
+//! all of these traits at once by adding `use satin::prelude::*` at
+//! the top of each module that uses Satin methods.
 //!
 //! These traits give you access to the `par_iter` method which provides
 //! parallel implementations of many iterative functions such as [`map`],
 //! [`for_each`], [`filter`], [`fold`], and [more].
 //!
-//! [`rayon::prelude`]: prelude
+//! [`satin::prelude`]: prelude
 //! [`map`]: iter::ParallelIterator::map
 //! [`for_each`]: iter::ParallelIterator::for_each
 //! [`filter`]: iter::ParallelIterator::filter
@@ -54,29 +47,18 @@
 //!
 //! # Crate Layout
 //!
-//! Rayon extends many of the types found in the standard library with
-//! parallel iterator implementations. The modules in the `rayon`
+//! Satin extends many of the types found in the standard library with
+//! parallel iterator implementations. The modules in the `satin`
 //! crate mirror [`std`] itself: so, e.g., the `option` module in
-//! Rayon contains parallel iterators for the `Option` type, which is
+//! Satin contains parallel iterators for the `Option` type, which is
 //! found in [the `option` module of `std`]. Similarly, the
-//! `collections` module in Rayon offers parallel iterator types for
+//! `collections` module in Satin offers parallel iterator types for
 //! [the `collections` from `std`]. You will rarely need to access
 //! these submodules unless you need to name iterator types
 //! explicitly.
 //!
 //! [the `option` module of `std`]: std::option
 //! [the `collections` from `std`]: std::collections
-//!
-//! # Targets without threading
-//!
-//! Rayon has limited support for targets without `std` threading implementations.
-//! See the [`rayon_core`] documentation for more information about its global fallback.
-//!
-//! # Other questions?
-//!
-//! See [the Rayon FAQ][faq].
-//!
-//! [faq]: https://github.com/rayon-rs/rayon/blob/main/FAQ.md
 
 #![deny(missing_debug_implementations)]
 #![deny(missing_docs)]
@@ -103,19 +85,6 @@ mod math;
 mod par_either;
 
 mod compile_fail;
-
-pub use rayon_core::FnContext;
-pub use rayon_core::ThreadBuilder;
-pub use rayon_core::ThreadPool;
-pub use rayon_core::ThreadPoolBuildError;
-pub use rayon_core::ThreadPoolBuilder;
-pub use rayon_core::{BroadcastContext, broadcast, spawn_broadcast};
-pub use rayon_core::{Scope, in_place_scope, scope};
-pub use rayon_core::{ScopeFifo, in_place_scope_fifo, scope_fifo};
-pub use rayon_core::{Yield, yield_local, yield_now};
-pub use rayon_core::{current_num_threads, current_thread_index, max_num_threads};
-pub use rayon_core::{join, join_context};
-pub use rayon_core::{spawn, spawn_fifo};
 
 /// We need to transmit raw pointers across threads. It is possible to do this
 /// without any unsafe code by converting pointers to usize or to AtomicPtr<T>

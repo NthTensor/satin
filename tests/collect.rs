@@ -1,4 +1,4 @@
-use rayon::prelude::*;
+use satin::prelude::*;
 
 use std::panic;
 use std::sync::Mutex;

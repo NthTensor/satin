@@ -12,8 +12,8 @@ use std::marker::PhantomData;
 /// # Examples
 ///
 /// ```
-/// use rayon::prelude::*;
-/// use rayon::iter::empty;
+/// use satin::prelude::*;
+/// use satin::iter::empty;
 ///
 /// let pi = (0..1234).into_par_iter()
 ///     .chain(empty())

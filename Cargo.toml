@@ -1,8 +1,7 @@
 [package]
-name = "rayon"
-version = "1.12.0"
-description = "Simple work-stealing parallelism for Rust"
-documentation = "https://docs.rs/rayon/"
+name = "satin"
+version = "1.0.0-dev"
+description = "Low-overhead parallel iterators"
 exclude = ["/ci/*", "/.github/*"]
 
 categories.workspace = true
@@ -10,32 +9,21 @@ edition.workspace = true
 keywords.workspace = true
 license.workspace = true
 readme.workspace = true
-repository.workspace = true
 rust-version.workspace = true
 
 [lints]
 workspace = true
 
-[features]
-# This feature switches to a spin-lock implementation on the browser's
-# main thread to avoid the forbidden `atomics.wait`.
-#
-# Only useful on the `wasm32-unknown-unknown` target.
-web_spin_lock = ["dep:wasm_sync", "rayon-core/web_spin_lock"]
-
 [dependencies]
 # These are both public dependencies!
-rayon-core = { version = "1.13.0", path = "rayon-core" }
+forte = { git = "https://github.com/NthTensor/forte.git" }
 either.workspace = true
-
-wasm_sync = { workspace = true, optional = true }
 
 [dev-dependencies]
 rand.workspace = true
 
-
 [workspace]
-members = ["rayon-demo", "rayon-core"]
+members = ["satin-demo"]
 exclude = ["ci"]
 
 [workspace.package]
@@ -43,7 +31,6 @@ readme = "README.md"
 rust-version = "1.85"
 edition = "2024"
 license = "MIT OR Apache-2.0"
-repository = "https://github.com/rayon-rs/rayon"
 keywords = ["parallel", "thread", "concurrency", "join", "performance"]
 categories = ["concurrency"]
 
@@ -64,4 +51,3 @@ either = { version = "1", default-features = false }
 libc = "0.2"
 rand = "0.10"
 scoped-tls = "1.0"
-wasm_sync = "0.1.0"

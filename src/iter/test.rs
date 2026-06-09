@@ -2,7 +2,9 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 
 use super::*;
 use crate::prelude::*;
-use rayon_core::*;
+use forte::{scope, Scope, Worker};
+
+use forte::ThreadPool;
 
 use rand::distr::StandardUniform;
 use rand::rngs::StdRng;
@@ -468,13 +470,13 @@ fn check_cmp_gt_to_seq() {
 #[cfg_attr(any(target_os = "emscripten", target_family = "wasm"), ignore)]
 fn check_cmp_short_circuit() {
     // We only use a single thread in order to make the short-circuit behavior deterministic.
-    let pool = ThreadPoolBuilder::new().num_threads(1).build().unwrap();
+    static POOL: ThreadPool = ThreadPool::new();
 
     let a = vec![0; 1024];
     let mut b = a.clone();
     b[42] = 1;
 
-    pool.install(|| {
+    POOL.with_worker(|_| {
         let expected = ::std::cmp::Ordering::Less;
         assert_eq!(a.par_iter().cmp(&b), expected);
 
@@ -498,13 +500,13 @@ fn check_cmp_short_circuit() {
 #[cfg_attr(any(target_os = "emscripten", target_family = "wasm"), ignore)]
 fn check_partial_cmp_short_circuit() {
     // We only use a single thread to make the short-circuit behavior deterministic.
-    let pool = ThreadPoolBuilder::new().num_threads(1).build().unwrap();
+    static POOL: ThreadPool = ThreadPool::new();
 
     let a = vec![0; 1024];
     let mut b = a.clone();
     b[42] = 1;
 
-    pool.install(|| {
+    POOL.with_worker(|_| {
         let expected = Some(::std::cmp::Ordering::Less);
         assert_eq!(a.par_iter().partial_cmp(&b), expected);
 
@@ -528,13 +530,13 @@ fn check_partial_cmp_short_circuit() {
 #[cfg_attr(any(target_os = "emscripten", target_family = "wasm"), ignore)]
 fn check_partial_cmp_nan_short_circuit() {
     // We only use a single thread to make the short-circuit behavior deterministic.
-    let pool = ThreadPoolBuilder::new().num_threads(1).build().unwrap();
+    static POOL: ThreadPool = ThreadPool::new();
 
     let a = vec![0.0; 1024];
     let mut b = a.clone();
     b[42] = f64::NAN;
 
-    pool.install(|| {
+    POOL.with_worker(|_| {
         let expected = None;
         assert_eq!(a.par_iter().partial_cmp(&b), expected);
 
@@ -1375,11 +1377,19 @@ fn find_map_first_or_last_or_any() {
     assert_eq!(a.par_iter().find_map_last(half_if_positive), Some(512_i32));
 
     fn half_if_positive(x: &i32) -> Option<i32> {
-        if *x > 0 { Some(x / 2) } else { None }
+        if *x > 0 {
+            Some(x / 2)
+        } else {
+            None
+        }
     }
 
     fn half_if_negative(x: &i32) -> Option<i32> {
-        if *x < 0 { Some(x / 2) } else { None }
+        if *x < 0 {
+            Some(x / 2)
+        } else {
+            None
+        }
     }
 }
 
@@ -1416,7 +1426,11 @@ fn check_while_some() {
         .into_par_iter()
         .map(|x| {
             counter.fetch_add(1, Ordering::SeqCst);
-            if x < 1024 { Some(x) } else { None }
+            if x < 1024 {
+                Some(x)
+            } else {
+                None
+            }
         })
         .while_some()
         .max();
@@ -1645,10 +1659,10 @@ fn check_rev() {
 fn scope_mix() {
     let counter_p = &AtomicUsize::new(0);
     scope(|s| {
-        s.spawn(move |s| {
+        s.spawn(move |_: &Worker| {
             divide_and_conquer(s, counter_p, 1024);
         });
-        s.spawn(move |_| {
+        s.spawn(move |_: &Worker| {
             let a: Vec<i32> = (0..1024).collect();
             let r1 = a.par_iter().map(|&i| i + 1).reduce_with(|i, j| i + j);
             let r2 = a.iter().map(|&i| i + 1).sum();
@@ -1657,10 +1671,14 @@ fn scope_mix() {
     });
 }
 
-fn divide_and_conquer<'scope>(scope: &Scope<'scope>, counter: &'scope AtomicUsize, size: usize) {
+fn divide_and_conquer<'scope>(
+    scope: &'scope Scope<'scope, '_>,
+    counter: &'scope AtomicUsize,
+    size: usize,
+) {
     if size > 1 {
-        scope.spawn(move |scope| divide_and_conquer(scope, counter, size / 2));
-        scope.spawn(move |scope| divide_and_conquer(scope, counter, size / 2));
+        scope.spawn(move |_: &Worker| divide_and_conquer(scope, counter, size / 2));
+        scope.spawn(move |_: &Worker| divide_and_conquer(scope, counter, size / 2));
     } else {
         // count the leaves
         counter.fetch_add(1, Ordering::SeqCst);
@@ -2136,8 +2154,7 @@ fn check_chunks_uneven() {
 fn check_repeat_unbounded() {
     // use just one thread, so we don't get infinite adaptive splitting
     // (forever stealing and re-splitting jobs that will panic on overflow)
-    let pool = ThreadPoolBuilder::new().num_threads(1).build().unwrap();
-    pool.install(|| {
+    forte::DEFAULT_POOL.with_worker(|_| {
         println!("counted {} repeats", repeat(()).count());
     });
 }

@@ -10,8 +10,8 @@ use crate::iter::*;
 /// # Examples
 ///
 /// ```
-/// use rayon::prelude::*;
-/// use rayon::iter::once;
+/// use satin::prelude::*;
+/// use satin::iter::once;
 ///
 /// let pi = (0..1234).into_par_iter()
 ///     .chain(once(-1))
