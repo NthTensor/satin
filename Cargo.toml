@@ -1,6 +1,6 @@
 [package]
 name = "satin"
-version = "1.0.0-dev"
+version = "1.0.0-alpha.1"
 description = "Low-overhead parallel iterators"
 exclude = ["/ci/*", "/.github/*"]
 
