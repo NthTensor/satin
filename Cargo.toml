@@ -16,7 +16,7 @@ workspace = true
 
 [dependencies]
 # These are both public dependencies!
-forte = { git = "https://github.com/NthTensor/forte.git" }
+forte.workspace = true
 either.workspace = true
 
 [dev-dependencies]
@@ -51,3 +51,4 @@ either = { version = "1", default-features = false }
 libc = "0.2"
 rand = "0.10"
 scoped-tls = "1.0"
+forte = "1.0.0-alpha.5"

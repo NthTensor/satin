@@ -7,7 +7,7 @@ rust-version.workspace = true
 
 [dependencies]
 satin = { path = "../" }
-forte = { path = "../../forte" }
+forte.workspace = true
 cgmath = "0.18"
 docopt = "1"
 fixedbitset = "0.5"
