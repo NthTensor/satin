@@ -12,7 +12,7 @@ use super::*;
 /// # Examples
 ///
 /// ```
-/// use rayon::prelude::*;
+/// use satin::prelude::*;
 ///
 /// // This will iterate `r` by mutable reference, like `par_iter_mut()`, while
 /// // ranges are all iterated by value like `into_par_iter()`.
@@ -27,7 +27,7 @@ use super::*;
 /// For a group that should all be iterated by reference, you can use a tuple reference.
 ///
 /// ```
-/// use rayon::prelude::*;
+/// use satin::prelude::*;
 ///
 /// let xs: Vec<_> = (1..10).collect();
 /// let ys: Vec<_> = (10..100).collect();
@@ -49,7 +49,7 @@ use super::*;
 /// Mutable references to a tuple will work similarly.
 ///
 /// ```
-/// use rayon::prelude::*;
+/// use satin::prelude::*;
 ///
 /// let mut xs: Vec<_> = (1..4).collect();
 /// let mut ys: Vec<_> = (-4..-1).collect();

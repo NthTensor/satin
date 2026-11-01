@@ -1,14 +1,14 @@
-use rayon::prelude::*;
+use satin::prelude::*;
 
 const OCTILLION: u128 = 1_000_000_000_000_000_000_000_000_000;
 
 /// Produce a parallel iterator for 0u128..10²⁷
-fn octillion() -> rayon::range::Iter<u128> {
+fn octillion() -> satin::range::Iter<u128> {
     (0..OCTILLION).into_par_iter()
 }
 
 /// Produce a parallel iterator for 0u128..=10²⁷
-fn octillion_inclusive() -> rayon::range_inclusive::Iter<u128> {
+fn octillion_inclusive() -> satin::range_inclusive::Iter<u128> {
     (0..=OCTILLION).into_par_iter()
 }
 
@@ -57,14 +57,14 @@ fn find_first_octillion_flat() {
     assert_eq!(x, Some(0));
 }
 
+static TWO_THREAD_POOL: forte::ThreadPool = forte::ThreadPool::new();
+
 fn two_threads<F: Send + FnOnce() -> R, R: Send>(f: F) -> R {
     // FIXME: If we don't use at least two threads, then we end up walking
     // through the entire iterator sequentially, without the benefit of any
     // short-circuiting.  We probably don't want testing to wait that long. ;)
-    let builder = rayon::ThreadPoolBuilder::new().num_threads(2);
-    let pool = builder.build().unwrap();
-
-    pool.install(f)
+    TWO_THREAD_POOL.resize_to(2);
+    TWO_THREAD_POOL.with_worker(|_| f())
 }
 
 #[test]

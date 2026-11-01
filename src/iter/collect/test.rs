@@ -7,7 +7,7 @@
 
 use super::collect_with_consumer;
 use crate::iter::plumbing::*;
-use rayon_core::join;
+use forte::join;
 
 use std::fmt;
 use std::panic;
@@ -229,12 +229,12 @@ fn left_panics() {
         let reducer = consumer.to_reducer();
         let (left_consumer, right_consumer, _) = consumer.split_at(2);
         let (left_result, right_result) = join(
-            || {
+            |_| {
                 let mut left_folder = left_consumer.into_folder();
                 left_folder = left_folder.consume(0);
                 panic!("left consumer panic");
             },
-            || {
+            |_| {
                 let mut right_folder = right_consumer.into_folder();
                 right_folder = right_folder.consume(2);
                 right_folder.complete() // early return
@@ -255,12 +255,12 @@ fn right_panics() {
         let reducer = consumer.to_reducer();
         let (left_consumer, right_consumer, _) = consumer.split_at(2);
         let (left_result, right_result) = join(
-            || {
+            |_| {
                 let mut left_folder = left_consumer.into_folder();
                 left_folder = left_folder.consume(0);
                 left_folder.complete() // early return
             },
-            || {
+            |_| {
                 let mut right_folder = right_consumer.into_folder();
                 right_folder = right_folder.consume(2);
                 panic!("right consumer panic");

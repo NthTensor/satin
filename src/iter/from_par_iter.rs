@@ -262,7 +262,7 @@ where
 ///
 /// ```
 /// use std::io::*;
-/// use rayon::prelude::*;
+/// use satin::prelude::*;
 ///
 /// let data = vec![1, 2, 3, 4, 5];
 /// let res: Result<()> = data.par_iter()

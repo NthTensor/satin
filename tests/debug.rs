@@ -1,4 +1,4 @@
-use rayon::prelude::*;
+use satin::prelude::*;
 use std::fmt::Debug;
 
 fn check<I>(iter: I)
@@ -196,24 +196,24 @@ fn debug_adaptors() {
 
 #[test]
 fn debug_empty() {
-    check(rayon::iter::empty::<i32>());
+    check(satin::iter::empty::<i32>());
 }
 
 #[test]
 fn debug_once() {
-    check(rayon::iter::once(10));
+    check(satin::iter::once(10));
 }
 
 #[test]
 fn debug_repeat() {
     let x: Option<i32> = None;
-    check(rayon::iter::repeat(x));
-    check(rayon::iter::repeat_n(x, 10));
+    check(satin::iter::repeat(x));
+    check(satin::iter::repeat_n(x, 10));
 }
 
 #[test]
 fn debug_splitter() {
-    check(rayon::iter::split(0..10, |x| (x, None)));
+    check(satin::iter::split(0..10, |x| (x, None)));
 }
 
 #[test]

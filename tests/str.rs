@@ -1,7 +1,7 @@
 use rand::distr::StandardUniform;
 use rand::rngs::StdRng;
 use rand::{RngExt, SeedableRng};
-use rayon::prelude::*;
+use satin::prelude::*;
 
 fn seeded_rng() -> StdRng {
     let seed = std::array::from_fn(|i| i as u8);

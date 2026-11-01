@@ -1,6 +1,6 @@
 use rand::distr::Uniform;
 use rand::{RngExt, rng};
-use rayon::prelude::*;
+use satin::prelude::*;
 use std::cell::Cell;
 use std::cmp::Ordering;
 use std::panic;

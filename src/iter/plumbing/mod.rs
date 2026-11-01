@@ -4,7 +4,8 @@
 //!
 //! [r]: https://github.com/rayon-rs/rayon/blob/main/src/iter/plumbing/README.md
 
-use crate::join_context;
+use forte::Worker;
+use forte::WorkloadHint;
 
 use super::IndexedParallelIterator;
 
@@ -38,7 +39,7 @@ pub trait ProducerCallback<T> {
 /// two producers, one producing the items before that point, and one
 /// producing the items after that point (these two producers can then
 /// independently be split further, or be converted into iterators).
-/// In Rayon, this splitting is used to divide between threads.
+/// In Satin, this splitting is used to divide between threads.
 /// See [the `plumbing` README][r] for further details.
 ///
 /// Note that each producer will always produce a fixed number of
@@ -70,7 +71,7 @@ pub trait Producer: Send + Sized {
     /// all the way down to a single item. This can be raised higher
     /// using the [`with_min_len`] method, which will force us to
     /// create sequential tasks at a larger granularity. Note that
-    /// Rayon automatically normally attempts to adjust the size of
+    /// Satin automatically normally attempts to adjust the size of
     /// parallel splits to reduce overhead, so this should not be
     /// needed.
     ///
@@ -252,25 +253,31 @@ struct Splitter {
     /// The `splits` tell us approximately how many remaining times we'd
     /// like to split this job.  We always just divide it by two though, so
     /// the effective number of pieces will be `next_power_of_two()`.
-    splits: usize,
+    splits: u32,
+
+    /// Marks when the call this piece belongs to started. Kept in the splitter,
+    /// which every piece already carries, so that it doesn't grow the closures
+    /// passed to `join`.
+    hint: WorkloadHint,
 }
 
 impl Splitter {
     #[inline]
     fn new() -> Splitter {
         Splitter {
-            splits: crate::current_num_threads(),
+            splits: num_members_u32(),
+            hint: WorkloadHint::new(),
         }
     }
 
     #[inline]
     fn try_split(&mut self, stolen: bool) -> bool {
-        let Splitter { splits } = *self;
+        let Splitter { splits, .. } = *self;
 
         if stolen {
             // This job was stolen!  Reset the number of desired splits to the
             // thread count, if that's more than we had remaining anyway.
-            self.splits = Ord::max(crate::current_num_threads(), self.splits / 2);
+            self.splits = Ord::max(num_members_u32(), self.splits / 2);
             true
         } else if splits > 0 {
             // We have splits remaining, make it so.
@@ -281,6 +288,12 @@ impl Splitter {
             false
         }
     }
+}
+
+/// The number of pool members, as the splitter counts splits.
+#[inline]
+fn num_members_u32() -> u32 {
+    u32::try_from(forte::num_members()).unwrap_or(u32::MAX)
 }
 
 /// The length splitter is built on thief-splitting, but additionally takes
@@ -315,7 +328,7 @@ impl LengthSplitter {
         // number of splits we need to get under that max.  This rounds down,
         // but the splitter actually gives `next_power_of_two()` pieces anyway.
         // e.g. len 12345 / max 100 = 123 min_splits -> 128 pieces.
-        let min_splits = len / Ord::max(max, 1);
+        let min_splits = u32::try_from(len / Ord::max(max, 1)).unwrap_or(u32::MAX);
 
         // Only update the value if it's not splitting enough already.
         if min_splits > splitter.inner.splits {
@@ -388,7 +401,7 @@ where
     C: Consumer<P::Item>,
 {
     let splitter = LengthSplitter::new(producer.min_len(), producer.max_len(), len);
-    return helper(len, false, splitter, producer, consumer);
+    return Worker::with_current(|worker| helper(len, false, splitter, producer, consumer, worker));
 
     fn helper<P, C>(
         len: usize,
@@ -396,6 +409,7 @@ where
         mut splitter: LengthSplitter,
         producer: P,
         consumer: C,
+        worker: Option<&Worker>,
     ) -> C::Result
     where
         P: Producer,
@@ -407,31 +421,90 @@ where
             let mid = len / 2;
             let (left_producer, right_producer) = producer.split_at(mid);
             let (left_consumer, right_consumer, reducer) = consumer.split_at(mid);
-            let (left_result, right_result) = join_context(
-                |context| {
+            let (left_result, right_result) = forte::join(
+                |w| {
                     helper(
                         mid,
-                        context.migrated(),
+                        w.migrated(),
                         splitter,
                         left_producer,
                         left_consumer,
+                        Some(w),
                     )
                 },
-                |context| {
+                |w| {
                     helper(
                         len - mid,
-                        context.migrated(),
+                        w.migrated(),
                         splitter,
                         right_producer,
                         right_consumer,
+                        Some(w),
                     )
                 },
             );
             reducer.reduce(left_result, right_result)
         } else {
-            producer.fold_with(consumer.into_folder()).complete()
+            let folder = consumer.into_folder();
+            fold_leaf(len, producer, folder, splitter.inner.hint, worker).complete()
         }
     }
+}
+
+/// The number of items at the start of a leaf that [`fold_leaf`] times to
+/// estimate how long each item takes. Leaves no longer than this are folded
+/// without checking the heartbeat.
+const LEAF_PROBE: usize = 64;
+
+/// Folds a leaf of `len` items, checking the pool's heartbeat between chunks
+/// so that the work queued above the leaf can be shared while it runs.
+///
+/// The first [`LEAF_PROBE`] items are timed, and the rest are folded in chunks
+/// sized to take about one [`HEARTBEAT`](forte::time::HEARTBEAT) each. Each
+/// chunk is a plain fold, so cheap items still compile to a tight loop.
+///
+/// After each leaf, `hint` lets the worker keep a long call's end busy (see
+/// [`WorkloadHint::complete_part`]).
+fn fold_leaf<P, F>(
+    len: usize,
+    producer: P,
+    folder: F,
+    hint: WorkloadHint,
+    worker: Option<&Worker>,
+) -> F
+where
+    P: Producer,
+    F: Folder<P::Item>,
+{
+    let Some(worker) = worker else {
+        return producer.fold_with(folder);
+    };
+    if len <= LEAF_PROBE {
+        let folder = producer.fold_with(folder);
+        hint.complete_part(worker);
+        return folder;
+    }
+    let (probe, mut producer) = producer.split_at(LEAF_PROBE);
+    let start = forte::time::ticks();
+    let mut folder = probe.fold_with(folder);
+    let elapsed = forte::time::ticks().wrapping_sub(start).max(1);
+
+    let heartbeat = forte::time::duration_to_ticks(forte::time::HEARTBEAT);
+    let chunk = (LEAF_PROBE as u64).saturating_mul(heartbeat) / elapsed;
+    let chunk = usize::try_from(chunk).unwrap_or(usize::MAX).max(1);
+
+    let mut remaining = len - LEAF_PROBE;
+    while remaining > chunk && !folder.full() {
+        worker.promote();
+        let (head, tail) = producer.split_at(chunk);
+        folder = head.fold_with(folder);
+        producer = tail;
+        remaining -= chunk;
+    }
+    worker.promote();
+    let folder = producer.fold_with(folder);
+    hint.complete_part(worker);
+    folder
 }
 
 /// A variant of [`bridge_producer_consumer()`] where the producer is an unindexed producer.
@@ -441,7 +514,9 @@ where
     C: UnindexedConsumer<P::Item>,
 {
     let splitter = Splitter::new();
-    bridge_unindexed_producer_consumer(false, splitter, producer, consumer)
+    Worker::with_current(|worker| {
+        bridge_unindexed_producer_consumer(false, splitter, producer, consumer, worker)
+    })
 }
 
 fn bridge_unindexed_producer_consumer<P, C>(
@@ -449,6 +524,7 @@ fn bridge_unindexed_producer_consumer<P, C>(
     mut splitter: Splitter,
     producer: P,
     consumer: C,
+    worker: Option<&Worker>,
 ) -> C::Result
 where
     P: UnindexedProducer,
@@ -462,15 +538,50 @@ where
                 let (reducer, left_consumer, right_consumer) =
                     (consumer.to_reducer(), consumer.split_off_left(), consumer);
                 let bridge = bridge_unindexed_producer_consumer;
-                let (left_result, right_result) = join_context(
-                    |context| bridge(context.migrated(), splitter, left_producer, left_consumer),
-                    |context| bridge(context.migrated(), splitter, right_producer, right_consumer),
+                let (left_result, right_result) = forte::join(
+                    |w| {
+                        bridge(
+                            w.migrated(),
+                            splitter,
+                            left_producer,
+                            left_consumer,
+                            Some(w),
+                        )
+                    },
+                    |w| {
+                        bridge(
+                            w.migrated(),
+                            splitter,
+                            right_producer,
+                            right_consumer,
+                            Some(w),
+                        )
+                    },
                 );
                 reducer.reduce(left_result, right_result)
             }
-            (producer, None) => producer.fold_with(consumer.into_folder()).complete(),
+            (producer, None) => fold_unindexed_leaf(producer, consumer, splitter.hint, worker),
         }
     } else {
-        producer.fold_with(consumer.into_folder()).complete()
+        fold_unindexed_leaf(producer, consumer, splitter.hint, worker)
     }
+}
+
+/// Folds one leaf of [`bridge_unindexed`], then reports it to `hint` (see
+/// [`WorkloadHint::complete_part`]).
+fn fold_unindexed_leaf<P, C>(
+    producer: P,
+    consumer: C,
+    hint: WorkloadHint,
+    worker: Option<&Worker>,
+) -> C::Result
+where
+    P: UnindexedProducer,
+    C: UnindexedConsumer<P::Item>,
+{
+    let folder = producer.fold_with(consumer.into_folder());
+    if let Some(worker) = worker {
+        hint.complete_part(worker);
+    }
+    folder.complete()
 }

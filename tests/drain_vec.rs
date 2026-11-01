@@ -1,4 +1,4 @@
-use rayon::prelude::*;
+use satin::prelude::*;
 
 #[test]
 fn drain_vec_yielded() {
