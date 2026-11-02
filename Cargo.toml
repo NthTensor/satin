@@ -1,6 +1,6 @@
 [package]
 name = "satin"
-version = "1.0.0-beta.1"
+version = "1.0.0-beta.2"
 description = "Low-overhead parallel iterators"
 exclude = ["/ci/*", "/.github/*"]
 
@@ -51,4 +51,4 @@ either = { version = "1", default-features = false }
 libc = "0.2"
 rand = "0.10"
 scoped-tls = "1.0"
-forte = { path = "../forte-publish" }
+forte = { version = "1.0.0-beta.2", path = "../forte-publish" }

@@ -19,7 +19,10 @@ use core::mem::{self, MaybeUninit};
 use core::ptr;
 use core::slice;
 
+use forte::Worker;
+
 use crate::SendPtr;
+use crate::iter::plumbing::join_on;
 use crate::iter::{IndexedParallelIterator, ParallelIterator};
 use crate::slice::ParallelSliceMut;
 
@@ -826,8 +829,13 @@ where
 ///
 /// `limit` is the number of allowed imbalanced partitions before switching to `heapsort`. If zero,
 /// this function will immediately switch to heapsort.
-fn recurse<'a, T, F>(mut v: &'a mut [T], is_less: &F, mut pred: Option<&'a mut T>, mut limit: u32)
-where
+fn recurse<'a, T, F>(
+    mut v: &'a mut [T],
+    is_less: &F,
+    mut pred: Option<&'a mut T>,
+    mut limit: u32,
+    worker: Option<&Worker>,
+) where
     T: Send,
     F: Fn(&T, &T) -> bool + Sync,
 {
@@ -909,18 +917,19 @@ where
             // calls and consume less stack space. Then just continue with the longer side (this is
             // akin to tail recursion).
             if left.len() < right.len() {
-                recurse(left, is_less, pred, limit);
+                recurse(left, is_less, pred, limit, worker);
                 v = right;
                 pred = Some(pivot);
             } else {
-                recurse(right, is_less, Some(pivot), limit);
+                recurse(right, is_less, Some(pivot), limit, worker);
                 v = left;
             }
         } else {
             // Sort the left and right half in parallel.
-            forte::join(
-                |_| recurse(left, is_less, pred, limit),
-                |_| recurse(right, is_less, Some(pivot), limit),
+            join_on(
+                worker,
+                |w| recurse(left, is_less, pred, limit, Some(w)),
+                |w| recurse(right, is_less, Some(pivot), limit, Some(w)),
             );
             break;
         }
@@ -943,7 +952,8 @@ where
     // Limit the number of imbalanced partitions to `floor(log2(len)) + 1`.
     let limit = usize::BITS - v.len().leading_zeros();
 
-    recurse(v, &is_less, None, limit);
+    // The one lookup of the current worker; every split below passes it on.
+    Worker::with_current(|worker| recurse(v, &is_less, None, limit, worker));
 }
 
 /// Merges non-decreasing runs `v[..mid]` and `v[mid..]` using `buf` as temporary storage, and
@@ -1330,8 +1340,13 @@ where
 ///
 /// Even if `is_less` panics at any point during the merge process, this function will fully copy
 /// all elements from `left` and `right` into `dest` (not necessarily in sorted order).
-unsafe fn par_merge<T, F>(left: &mut [T], right: &mut [T], dest: *mut T, is_less: &F)
-where
+unsafe fn par_merge<T, F>(
+    left: &mut [T],
+    right: &mut [T],
+    dest: *mut T,
+    is_less: &F,
+    worker: Option<&Worker>,
+) where
     T: Send,
     F: Fn(&T, &T) -> bool + Sync,
 {
@@ -1388,9 +1403,10 @@ where
             // See the documentation of SendPtr for a full explanation
             let dest_l = SendPtr(dest);
             let dest_r = SendPtr(dest.add(left_l.len() + right_l.len()));
-            forte::join(
-                move |_| par_merge(left_l, right_l, dest_l.get(), is_less),
-                move |_| par_merge(left_r, right_r, dest_r.get(), is_less),
+            join_on(
+                worker,
+                move |w| par_merge(left_l, right_l, dest_l.get(), is_less, Some(w)),
+                move |w| par_merge(left_r, right_r, dest_r.get(), is_less, Some(w)),
             );
         }
         // Finally, `s` gets dropped if we used sequential merge, thus copying the remaining elements
@@ -1440,6 +1456,7 @@ unsafe fn merge_recurse<T, F>(
     chunks: &[(usize, usize)],
     into_buf: bool,
     is_less: &F,
+    worker: Option<&Worker>,
 ) where
     T: Send,
     F: Fn(&T, &T) -> bool + Sync,
@@ -1491,9 +1508,10 @@ unsafe fn merge_recurse<T, F>(
         // See the documentation of SendPtr for a full explanation
         let v = SendPtr(v);
         let buf = SendPtr(buf);
-        forte::join(
-            move |_| merge_recurse(v.get(), buf.get(), left, !into_buf, is_less),
-            move |_| merge_recurse(v.get(), buf.get(), right, !into_buf, is_less),
+        join_on(
+            worker,
+            move |w| merge_recurse(v.get(), buf.get(), left, !into_buf, is_less, Some(w)),
+            move |w| merge_recurse(v.get(), buf.get(), right, !into_buf, is_less, Some(w)),
         );
 
         // Everything went all right - recursive calls didn't panic.
@@ -1503,7 +1521,7 @@ unsafe fn merge_recurse<T, F>(
         // Merge chunks `(start, mid)` and `(mid, end)` from `src` into `dest`.
         let src_left = slice::from_raw_parts_mut(src.add(start), mid - start);
         let src_right = slice::from_raw_parts_mut(src.add(mid), end - mid);
-        par_merge(src_left, src_right, dest.add(start), is_less);
+        par_merge(src_left, src_right, dest.add(start), is_less, worker);
     }
 }
 
@@ -1606,9 +1624,10 @@ where
 
     // All chunks are properly sorted.
     // Now we just have to merge them together.
-    unsafe {
-        merge_recurse(v.as_mut_ptr(), buf, &chunks, false, &is_less);
-    }
+    // The one lookup of the current worker; every split below passes it on.
+    Worker::with_current(|worker| unsafe {
+        merge_recurse(v.as_mut_ptr(), buf, &chunks, false, &is_less, worker);
+    });
 }
 
 #[cfg(test)]
